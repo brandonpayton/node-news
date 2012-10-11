@@ -1,0 +1,12 @@
+[submodule "client/dojo"]
+	path = client/dojo
+	url = https://github.com/dojo/dojo.git
+[submodule "client/dijit"]
+	path = client/dijit
+	url = https://github.com/dojo/dijit.git
+[submodule "client/dojox"]
+	path = client/dojox
+	url = https://github.com/dojo/dojox.git
+[submodule "client/util"]
+	path = client/util
+	url = https://github.com/dojo/util.git

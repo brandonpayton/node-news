@@ -1,0 +1,14 @@
+<div>
+    <div data-dojo-type="app/widget/FeedPane"
+        data-dojo-props="splitter:true, region: 'leading'"
+        data-dojo-attach-point="feedTree"
+        style="width: 20%;"></div>
+    <div data-dojo-type="dijit/layout/BorderContainer"
+        data-dojo-props="region: 'center'">
+        <div data-dojo-props="region: 'top', splitter: true, minSize: '100', maxSize: '300'" data-dojo-type="app/widget/ArticlePane"
+            data-dojo-attach-point="articleList" style="height: 25%"></div>
+        <div data-dojo-type="app/widget/ViewPane"
+            data-dojo-props="region: 'center'"
+            data-dojo-attach-point="viewPane"></div>
+    </div>
+</div>

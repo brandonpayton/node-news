@@ -1,0 +1,124 @@
+@import '../../dijit/themes/tundra/tundra.css';
+@import '../../dgrid/css/dgrid.css';
+/* TODO: Convert to .styl files and use nib's global-reset() */
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  font-weight: inherit;
+  font-style: inherit;
+  font-family: inherit;
+  font-size: 100%;
+  vertical-align: baseline;
+}
+
+html,
+body,
+.news-app {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow:hidden;
+}
+
+.feedPane .dijitTree {
+    margin: 0.4em
+}
+
+.dgrid {
+    height: 100%;
+    width: 100%;
+}
+
+.dgrid .field-date {
+    width: 12em;
+}
+
+.dgrid .field-author {
+    width: 12em;
+}
+
+.feedPropertiesDialog label {
+    display: block;
+    margin-left: auto;
+    text-align: right;
+}
+
+.feedPropertiesDialog .controlContainer {
+    width: 20em;
+    display: inline-block;
+    text-align: left;
+}
+
+.feedPropertiesDialog .dijitTextBox {
+    margin-right: auto;
+}
+
+.feedPropertiesDialog .controlContainer .dijitTextBox {
+    width: 100%;
+}
+
+.dialogButtons {
+    text-align: center;
+}
+
+.article-unread {
+    font-weight: bold;
+}

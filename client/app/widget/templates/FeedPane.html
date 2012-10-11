@@ -1,0 +1,20 @@
+<div>
+    <div data-dojo-type="dijit/Toolbar" data-dojo-props="region: 'top'">
+        <button
+            data-dojo-type="dijit/form/Button"
+            data-dojo-attach-event="onClick: handleAddClick"
+            >Add</button>
+        <button
+            data-dojo-type="dijit/form/Button"
+            data-dojo-attach-event="onClick: handleEditClick"
+            >Edit</button>
+        <button
+            data-dojo-type="dijit/form/Button"
+            data-dojo-attach-event="onClick: handleRemoveClick"
+            >Remove</button>
+    </div>
+    <div id="feeds"
+        data-dojo-type="dijit/Tree"
+        data-dojo-props="model: this.treeModel, showRoot: false, region: 'center'"
+        data-dojo-attach-point="tree"></div>
+</div>

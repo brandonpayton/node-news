@@ -1,0 +1,28 @@
+{
+  "author": {
+    "name": "Brandon C. Payton",
+    "email": "brandon@happycode.net",
+    "url": "http://happycode.net"
+  },
+  "name": "news",
+  "description": "An Atom/RSS feed aggregator web application.",
+  "version": "0.0.0",
+  "homepage": "http://happycode.net",
+  "repository": {
+    "url": "http://github.com/blah"
+  },
+  "main": "server.js",
+  "scripts": {
+    "test": "test-command-TODO"
+  },
+  "dependencies": {
+    "feedparser": "0.9.x",
+    "send": "0.0.4",
+    "couch-client": "0.0.4"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
