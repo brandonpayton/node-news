@@ -1,26 +1,17 @@
 define({
     "language": "javascript",
     "views": {
-        "sources": {
+        "feeds": {
             "map": function(doc) {
-                if(doc.type === 'source') emit(doc._id, doc);
+                if(doc.type === 'feed') emit(doc._id, doc);
             }
         },
         "articles": {
             map: function(doc) {
-                if(doc.type === 'article') emit(doc._id, doc);
-            }
-        }
-    },
-    "lists": {
-        "article-list": function(head, req) {
-            var row, articles = [];
-            while(row = getRow()) {
-                if(row.value._sourceId === req.query.source) {
-                    articles.push(row.value);
+                if(doc.type === 'article') {
+                    emit([ doc._feedId, doc._id ], doc);
                 }
             }
-            return articles;
         }
     }
 });
