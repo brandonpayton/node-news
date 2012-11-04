@@ -1,4 +1,18 @@
-dojoConfig = require("./bootstrapConfig");
-var argv = process.argv;
-//dojoConfig.deps = [ argv[argv.length - 1] ];
-require("./client/dojo/dojo.js");
+// TODO: What happens with this "global" in node.js?
+dojoConfig = {
+    async: true,
+    baseUrl: __dirname + "/client",
+    packages: [
+        "dojo",
+        "dijit",
+        "dojox",
+        "util",{
+            name: "doh",
+            location: "util/doh"
+        },{
+            name: "lib",
+            location: "../lib"
+        }
+    ]  
+};
+require(dojoConfig.baseUrl + "/dojo/dojo.js");
