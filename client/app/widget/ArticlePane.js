@@ -60,10 +60,8 @@ define([
             this.inherited(arguments);
 
             var grid = this._grid;
-            this.subscribe("feeds", function(args) {
-                if(args.event === "execute") {
-                    grid.set('store', args.item.getArticleStore());
-                }
+            this.subscribe("/feed/select", function(args) {
+                grid.set('store', args.articleStore);
             });
 
             grid.on("dgrid-select", function(event) {

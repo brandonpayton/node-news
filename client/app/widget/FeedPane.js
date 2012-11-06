@@ -2,6 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/Deferred",
+    "dojo/topic",
     "app/main",
     // Change to relative module ID.
     "app/widget/FeedPropertiesDialog",
@@ -14,7 +15,7 @@ define([
     "dijit/Toolbar",
     "dijit/Tree",
     "dijit/form/Button"
-], function(declare, lang, Deferred, app, FeedPropertiesDialog, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template, ObjectStoreModel) {
+], function(declare, lang, Deferred, topic, app, FeedPropertiesDialog, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template, ObjectStoreModel) {
     return declare("app.widget.FeedPane", [ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
         baseClass: "feedPane",
         treeModel: null,
@@ -27,8 +28,9 @@ define([
             var treeModel = this.treeModel = new ObjectStoreModel({
                 store: app.feedStore,
                 mayHaveChildren: function(item) {
-                    return item.type === "group";
-                }
+                    return false;
+                },
+                getLabel: function(item) { return item.title; }
             });
             treeModel.root = { };
             this._feedPropertiesDialog = new FeedPropertiesDialog();
@@ -39,8 +41,7 @@ define([
             fpd.set('title', "Add Feed");
             fpd.show().then(function(resultsPromise) {
                 resultsPromise.then(function() {
-                    var feed = lang.mixin(fpd.get('value'), { type: "source" });
-                    app.feedStore.add(feed); 
+                    app.feedStore.add(fpd.get('value')); 
                 });
             });
         },
@@ -53,6 +54,14 @@ define([
                 resultsPromise.then(function() {
                     
                 });
+            });
+        },
+
+        handleFeedClick: function(item) {
+            var feedId = app.feedStore.getIdentity(item);
+            topic.publish("/feed/select", {
+                feed: item,
+                articleStore: app.feedStore.getArticleStore(feedId)
             });
         },
 

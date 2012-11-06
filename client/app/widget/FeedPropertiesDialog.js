@@ -31,14 +31,12 @@ define([
             // TODO: Convert this to use a dojo Form and get a built-in _getValueAttr
             var w = this._widget;
             return {
-                name: w.nameBox.get('value'),
                 url: w.urlBox.get('value')
             };
         },
 
         _setValueAttr: function(/*Object*/ obj) {
             var w = this._widget;
-            w.nameBox.set("value", obj.name);
             w.urlBox.set("value", obj.url);
         }
     });
