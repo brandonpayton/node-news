@@ -4,19 +4,29 @@ define([
     "dojo/Deferred",
     "dojo/topic",
     "app/main",
+    "dgrid/OnDemandList",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
     // Change to relative module ID.
     "app/widget/FeedPropertiesDialog",
-    "dijit/layout/BorderContainer",
+    "dijit/_WidgetBase",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dojo/text!./templates/FeedPane.html",
-    "dijit/tree/ObjectStoreModel",
     // TODO: Weren't these sorts of template dependency includes supposed to be no longer required?
+    "dijit/layout/ContentPane",
     "dijit/Toolbar",
-    "dijit/Tree",
     "dijit/form/Button"
-], function(declare, lang, Deferred, topic, app, FeedPropertiesDialog, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template, ObjectStoreModel) {
-    return declare("app.widget.FeedPane", [ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
+], function(declare, lang, Deferred, topic, app, OnDemandList, Keyboard, Selection, FeedPropertiesDialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template) {
+
+    var FeedList = declare([ OnDemandList, Keyboard, Selection ], {
+        selectionMode: "single",
+        renderRow: function(value, options) {
+            return this.inherited(arguments, [ value.title, options ]);
+        }
+    });
+
+    return declare("app.widget.FeedPane", [ _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin ], {
         baseClass: "feedPane",
         treeModel: null,
         tree: null,
@@ -25,15 +35,30 @@ define([
         _feedPropertiesDialog: null,
 
         constructor: function(args) {
-            var treeModel = this.treeModel = new ObjectStoreModel({
-                store: app.feedStore,
-                mayHaveChildren: function(item) {
-                    return false;
-                },
-                getLabel: function(item) { return item.title; }
+           this._feedPropertiesDialog = new FeedPropertiesDialog();
+        },
+
+        buildRendering: function() {
+            this.inherited(arguments);
+
+            this._list = new FeedList({ }, this.feedListElement);
+            this._list.set("store", app.feedStore);
+        },
+
+        postCreate: function() {
+            this.inherited(arguments);
+
+            var list = this._list;
+            list.on("dgrid-select", function(event) {
+                var row = event.rows[0],
+                    item = row.data;
+
+                var feedId = app.feedStore.getIdentity(item);
+                topic.publish("/feed/select", {
+                    feed: item,
+                    articleStore: app.feedStore.getArticleStore(feedId)
+                });
             });
-            treeModel.root = { };
-            this._feedPropertiesDialog = new FeedPropertiesDialog();
         },
 
         handleAddClick: function() {
@@ -58,11 +83,6 @@ define([
         },
 
         handleFeedClick: function(item) {
-            var feedId = app.feedStore.getIdentity(item);
-            topic.publish("/feed/select", {
-                feed: item,
-                articleStore: app.feedStore.getArticleStore(feedId)
-            });
         },
 
         handleRemoveClick: function() {

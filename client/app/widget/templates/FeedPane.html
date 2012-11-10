@@ -1,5 +1,5 @@
 <div>
-    <div data-dojo-type="dijit/Toolbar" data-dojo-props="region: 'top'">
+    <div data-dojo-type="dijit/Toolbar">
         <button
             data-dojo-type="dijit/form/Button"
             data-dojo-attach-event="onClick: handleAddClick"
@@ -13,8 +13,5 @@
             data-dojo-attach-event="onClick: handleRemoveClick"
             >Remove</button>
     </div>
-    <div id="feeds"
-        data-dojo-type="dijit/Tree"
-        data-dojo-props="model: this.treeModel, showRoot: false, region: 'center', onClick: this.handleFeedClick"
-        data-dojo-attach-point="tree"></div>
+    <div data-dojo-attach-point="feedListElement"></div>
 </div>
