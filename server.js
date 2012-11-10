@@ -3,11 +3,16 @@ define([
     "dojo/node!http",
     "dojo/node!send",
     "dojo/node!url",
+    "dojo/node!sofa",
     "lib/store/ServerFeedStore",
     "lib/FeedRestApi",
-], function(contextRequire, http, send, url, ServerFeedStore, FeedRestApi) {
+], function(contextRequire, http, send, url, Sofa, ServerFeedStore, FeedRestApi) {
 
-    var feedStore = new ServerFeedStore("http://localhost:5984/new-news"),
+    var couchDbServer = new Sofa.Server({
+            host: "localhost"                               
+        }),
+        couchDb = new Sofa.Database(couchDbServer, "new-news"),
+        feedStore = new ServerFeedStore(couchDb),
         feedRestApi = new FeedRestApi(feedStore);
 
     http.createServer(function(req, res) {
