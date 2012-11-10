@@ -28,7 +28,7 @@ define([
 ], function (app, require, has, lang, FeedStore, JsonRestStore, Observable) {
     lang.mixin(app, {
         // TODO: Convert these to first-class stores dedicated to Feeds and Articles.
-        feedStore: new Observable(new FeedStore())
+        feedStore: Observable(new FeedStore())
     });
 
     require([ './ui/Desktop', 'dojo/domReady!' ], function (Desktop) {
