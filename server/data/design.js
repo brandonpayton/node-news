@@ -9,7 +9,7 @@ define({
         "articles": {
             map: function(doc) {
                 if(doc.type === 'article') {
-                    emit([ doc.feedId ], doc);
+                    emit([ doc.feedId, doc.date ], doc);
                 }
             }
         }

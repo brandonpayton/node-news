@@ -48,7 +48,9 @@ define([
                 doc: "news",
                 view: "articles",
                 params: {
-                    key: [ this._feedId ]    
+                    startkey: [ this._feedId, {} ],
+                    endkey: [ this._feedId, 0 ],
+                    descending: true
                 },
                 callback: sofaCallback(async)
             });
