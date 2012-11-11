@@ -4,8 +4,8 @@ define([
   "dojo/Deferred",
   "dojo/store/util/QueryResults",
   "dojo/node!url",
-  "lib/sofaCallback",
-  "lib/store/ArticleStore"
+  "../sofaCallback",
+  "./ArticleStore"
 ], function(lang, declare, Deferred, QueryResults, url, sofaCallback, ArticleStore) {
 
   function normalizeUrlStr(urlStr) {

@@ -1,5 +1,5 @@
-[submodule "client/dojo"]
-	path = client/dojo
+[submodule "dojo"]
+	path = dojo
 	url = https://github.com/dojo/dojo.git
 [submodule "client/dijit"]
 	path = client/dijit
@@ -7,8 +7,8 @@
 [submodule "client/dojox"]
 	path = client/dojox
 	url = https://github.com/dojo/dojox.git
-[submodule "client/util"]
-	path = client/util
+[submodule "util"]
+	path = util
 	url = https://github.com/dojo/util.git
 [submodule "client/dgrid"]
 	path = client/dgrid

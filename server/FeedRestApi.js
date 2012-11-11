@@ -7,7 +7,7 @@ define([
     "dojo/promise/all",
     "dojo/node!http",
     "dojo/node!url",
-    "lib/updateFeed"
+    "./updateFeed"
 ], function(lang, declare, Stream, Deferred, when, all, http, url, updateFeed) {
 
     function error(res, statusCode, err) {

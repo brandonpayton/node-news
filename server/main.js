@@ -4,8 +4,8 @@ define([
     "dojo/node!send",
     "dojo/node!url",
     "dojo/node!sofa",
-    "lib/store/ServerFeedStore",
-    "lib/FeedRestApi",
+    "./store/ServerFeedStore",
+    "./FeedRestApi",
 ], function(contextRequire, http, send, url, Sofa, ServerFeedStore, FeedRestApi) {
 
     var couchDbServer = new Sofa.Server({
@@ -30,7 +30,7 @@ define([
             res.end('Redirecting to ' + path);
         }
 
-        var clientUrlPattern = new RegExp("^/client/"),
+        var clientUrlPattern = new RegExp("^/client|dojo/"),
             dataUrlPattern = new RegExp("^/data(/.*)"),
             match,
             dataPath;
@@ -41,7 +41,7 @@ define([
             // Send static client resources.
             send(req, u.pathname)
             // TODO: How to get __dirname when using dojo loader?
-            .root(contextRequire.toUrl("client/.."))
+            .root(contextRequire.toUrl(".") + "/..")
             .on('error', console.error)
             .pipe(res);
         } else if(match = dataUrlPattern.exec(u.pathname)) {
