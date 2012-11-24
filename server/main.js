@@ -4,16 +4,39 @@ define([
     "dojo/node!send",
     "dojo/node!url",
     "dojo/node!sofa",
-    "./store/ServerFeedStore",
+    "./store/FeedStore",
+    "dojo/store/Observable",
     "./FeedRestApi",
-], function(contextRequire, http, send, url, Sofa, ServerFeedStore, FeedRestApi) {
+    "./FeedUpdater"
+], function(contextRequire, http, send, url, Sofa, FeedStore, Observable, FeedRestApi, FeedUpdater) {
 
     var couchDbServer = new Sofa.Server({
             host: "localhost"                               
         }),
         couchDb = new Sofa.Database(couchDbServer, "new-news"),
-        feedStore = new ServerFeedStore(couchDb),
-        feedRestApi = new FeedRestApi(feedStore);
+        feedStore = Observable(new FeedStore(couchDb)),
+        allFeedsQueryResults = feedStore.query(),
+        feedUpdater = new FeedUpdater(feedStore),
+        feedRestApi = new FeedRestApi(feedStore, feedUpdater);
+
+    allFeedsQueryResults.observe(function(feed, removedFrom, insertedInto) {
+        if(removedFrom > 0) {
+            if(insertedInto > 0) {
+                // Updated. For now, do nothing.
+            } else {
+                // Deleted. Do nothing.
+            }
+        } else {
+            // Added.
+            feedUpdater.updateFeed(feed);
+        }
+    });
+    setTimeout(function updateFeeds() {
+        allFeedsQueryResults.forEach(feedUpdater.queueFeed.bind(feedUpdater));
+        // TODO: Need to think about how to do this better than update all at the same time.
+        
+        setTimeout(updateFeeds, 1000 * 60 * 30);
+    }, 0);
 
     http.createServer(function(req, res) {
         var u = url.parse(req.url)

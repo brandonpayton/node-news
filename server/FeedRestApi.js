@@ -6,9 +6,8 @@ define([
     "dojo/when",
     "dojo/promise/all",
     "dojo/node!http",
-    "dojo/node!url",
-    "./updateFeed"
-], function(lang, declare, Stream, Deferred, when, all, http, url, updateFeed) {
+    "dojo/node!url"
+], function(lang, declare, Stream, Deferred, when, all, http, url) {
 
     function error(res, statusCode, err) {
         res.statusCode = statusCode;
@@ -53,7 +52,7 @@ define([
         })
     }
 
-    function createRequestHandlers(feedStore) {
+    function createRequestHandlers(feedStore, feedUpdater) {
         return {
             feeds: {
                 "GET": function() {
@@ -86,9 +85,14 @@ define([
                                 feedPromise.then(lang.hitch(asyncFeed, "resolve"), lang.hitch(asyncFeed, "reject"));
                             }
                         }
-                        updateFeed(feedStore, url).then(fulfilledCallback, fulfilledCallback, progressCallback);
+                        feedUpdater.addFeed(url).then(fulfilledCallback, fulfilledCallback, progressCallback);
                         return asyncFeed;
                     });
+                }
+            },
+            unread_article_counts: {
+                "GET": function() {
+
                 }
             },
             feed: {
@@ -102,6 +106,11 @@ define([
             articles: {
                 "GET": function(feedId) {
                     return feedStore.getArticleStore(feedId).query();
+                }
+            },
+            unread_article_count: {
+                "GET": function(feedId) {
+
                 }
             },
             article: {
@@ -118,8 +127,8 @@ define([
 
     return declare([], {
         _requestHandlers: null,
-        constructor: function(feedStore) {
-            this._requestHandlers = createRequestHandlers(feedStore);
+        constructor: function(feedStore, feedUpdater) {
+            this._requestHandlers = createRequestHandlers(feedStore, feedUpdater);
         },
         serve: function(dataPath, req, res) {
             var handlers = this._requestHandlers;

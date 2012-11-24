@@ -4,7 +4,7 @@ define([
   "dojo/_base/lang",
   "dojo/Deferred",
   "doh/runner",
-  "lib/store/ServerFeedStore",
+  "./store/ServerFeedStore",
   "dojo/node!fs",
   "dojo/node!wrench"
   ], function(require, lang, Deferred, doh, ServerFeedStore, fs, wrench) {
