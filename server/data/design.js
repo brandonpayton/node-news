@@ -1,12 +1,12 @@
 define({
-    "language": "javascript",
-    "views": {
-        "feeds": {
-            "map": function(doc) {
+    language: "javascript",
+    views: {
+        feeds: {
+            map: function(doc) {
                 if(doc.type === 'feed') emit(doc.title, doc);
             }
         },
-        "articles": {
+        articles: {
             map: function(doc) {
                 if(doc.type === 'article') {
                     emit([ doc.feedId, doc.date ], doc);
@@ -32,11 +32,13 @@ define({
                 return reduction;
             }
         }
-        "article_lookup": {
-            map: function(doc) {
-                if(doc.type === "article") {
-                    emit([ doc.feedId, doc.link ]);
-                }
+    },
+    validate_doc_update: function(newDoc, savedDoc, userCtx) {
+        if(newDoc.type === 'feed') {
+            if(!newDoc.url) {
+                throw { forbidden: "feed must have url property." };
+            } else if(newDoc._id !== newDoc.url) {
+                throw { forbidden: "feed _id must match url property." };
             }
         }
     }
