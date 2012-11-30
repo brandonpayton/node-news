@@ -76,7 +76,7 @@ define([
 
                         function fulfilledCallback() {
                             if(feedPromise === null) {
-                                asyncFeed.reject(new Error("Unable to populate feed data."));
+                                asyncFeed.reject(new Error("Unable to read feed information. URL doesn't appear to point to feed data."));
                             }
                         }
                         function progressCallback(progress) {
@@ -115,6 +115,7 @@ define([
             },
             article: {
                 "PUT": function(feedId, articleId, data) {
+                    debugger;
                     data = lang.mixin({ _id: articleId }, data);
                     return feedStore.getArticleStore(feedId).put(data);
                 },
@@ -165,8 +166,11 @@ define([
                 } else {
                     var result = null;
                     if(method in { PUT: 1, POST: 1 }) {
+                        if(req.headers["content-type"] !== "application/json") {
+                            throw new Error("Content-type must be application/json");
+                        }
                         readAllData(req).then(function(data) {
-                            handlerParams.push(data);
+                            handlerParams.push(JSON.parse(data));
                             completeResponse(res, handler.apply(null, handlerParams));
                         });
                     } else {

@@ -10,11 +10,8 @@ define([
     "./FeedUpdater"
 ], function(contextRequire, http, send, url, Sofa, FeedStore, Observable, FeedRestApi, FeedUpdater) {
 
-    var couchDbServer = new Sofa.Server({
-            host: "localhost"                               
-        }),
-        couchDb = new Sofa.Database(couchDbServer, "new-news"),
-        feedStore = Observable(new FeedStore(couchDb)),
+    var couchDbUrl = "http://localhost:5984/new-news",
+        feedStore = Observable(new FeedStore(couchDbUrl)),
         allFeedsQueryResults = feedStore.query(),
         feedUpdater = new FeedUpdater(feedStore),
         feedRestApi = new FeedRestApi(feedStore, feedUpdater);
