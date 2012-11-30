@@ -3,12 +3,12 @@ define({
     views: {
         feeds: {
             map: function(doc) {
-                if(doc.type === 'feed') emit(doc.title, doc);
+                if(doc.type === 'feed' && !doc.deleted) emit(doc.title, doc);
             }
         },
         articles: {
             map: function(doc) {
-                if(doc.type === 'article') {
+                if(doc.type === 'article' && !doc.deleted) {
                     emit([ doc.feedId, doc.date ], doc);
                 }
             },
