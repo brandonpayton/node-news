@@ -36,9 +36,6 @@ define([
         },
 
         updateFeed: function(feed) {
-            if(feed === undefined) {
-                debugger;
-            }
             var asyncJob = new Deferred(),
                 feedStore = this._feedStore,
                 meta = null;
@@ -47,7 +44,6 @@ define([
             feedparser.parseUrl(feed._id)
             .on("meta", function(metadata) {
                 meta = metadata;
-                console.log("Updating feed.");
                 if(metadata.title && feed.title !== metadata.title) {
                     feed.title = metadata.title;
                     asyncJob.progress({
@@ -59,15 +55,11 @@ define([
             .on("article", function(article) {
                 var articleStore = feedStore.getArticleStore(feed._id);
                 var articleId = articleStore.getIdentity(article);
-                console.log("Adding article during update: " + articleId);
                 asyncJob.progress({
                     type: "SavingArticle",
                     promise: articleStore.get(articleId).then(function(doc) {
                         if(doc === undefined) {
                             return articleStore.add(article);
-                        } else {
-                            debugger;
-                            // TODO: Create debug log to track server behavior and catch weak handling of broken feeds.
                         }
                     })
                 });
@@ -82,8 +74,11 @@ define([
                 feedStore = this._feedStore,
                 feedSavePromise = null;
 
-            // TODO: Handle "error" event if there is one and create aggregate error notification article for this feed.
             feedparser.parseUrl(url)
+            // TODO: Does 'error' signal the end of parsing or may feedparser encounter an error and continue?
+            .on("error", function(error) {
+                asyncJob.reject(error);
+            })
             .on("meta", function(metadata) {
                 feedSavePromise = feedStore.add({
                     url: url,
@@ -102,9 +97,8 @@ define([
                     type: "SavingArticle",
                     promise: articleStore.get(articleId).then(function(doc) {
                         if(doc === undefined) {
-                            return articleStore.put(article);
-                        } else {
-                            // TODO: Create debug log to track server behavior and catch weak handling of broken feeds.
+                            // This article has not yet been added.
+                            return articleStore.add(article);
                         }
                     })
                 });
