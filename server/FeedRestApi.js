@@ -59,8 +59,7 @@ define([
                     return feedStore.query();
                 },
                 "POST": function(data) {
-                    var data = JSON.parse(data),
-                        url = data.url;
+                    var url = data.url;
 
                     if(!url) {
                         throw new Error("No url specified for new feed");
@@ -170,6 +169,7 @@ define([
                             throw new Error("Content-type must be application/json");
                         }
                         readAllData(req).then(function(data) {
+                            debugger;
                             handlerParams.push(JSON.parse(data));
                             completeResponse(res, handler.apply(null, handlerParams));
                         });
@@ -177,48 +177,9 @@ define([
                         completeResponse(res, handler.apply(null, handlerParams));
                     }
                 }
-                /*
-                if(parts.shift() === "feeds") {
-                    if(parts.length === 0) {
-                        handler = handlers.feeds[method];
-                    } else {
-                        var feedId = parts.shift()
-                        if(parts.length === 0) {
-                            handler = handlers.feed[method];
-                        } else if(parts.shift() === "articles") {
-                            if(parts.length === 0) {
-                                handler = handlers.articles[method];
-                            } else {
-                                var articleId = parts.shift()
-                                if(parts.length === 0) {
-                                    handler = handlers.article[method];
-                                } else {
-                                    if(parts[0] === "content") {
-                                        handler = handlers.content[method];
-                                    }
-                                } 
-                            }
-                        }
-                    }
-                }
-                */
             } catch(err) {
                 errorCallback(err);
             }
         }
-    })
-})
-
-/*
-   Feeds
-   C POST /feeds
-   R GET /feeds or GET /feeds/UUID
-   U PUT /feeds/UUID
-   D DELETE /feeds/UUID
-
-   Articles
-   C n/a
-   R /feeds/UUID/articles or /feeds/UUID/articles/UUID
-   U /feeds/UUID/articles/UUID
-   D /feeds/UUID/articles/UUID
-   */
+    });
+});
