@@ -11,6 +11,8 @@ define([
     "app/store/ArticleStore"
 ], function(declare, arrayUtils, Deferred, when, request, lang, Observable, QueryResults, ArticleStore) {
 
+    var putHeaders = { 'Content-Type': 'application/json' };
+
     return declare([], {
         dataUrl: "../data",
         idProperty: "_id",
@@ -22,8 +24,9 @@ define([
         add: function(feedData, options) {
             var feed = lang.mixin({ type: "feed" }, feedData);
             return request.post(this.dataUrl + "/feeds", {
-                handleAs: "json",
-                data: JSON.stringify(feed)
+                headers: putHeaders,
+                data: JSON.stringify(feed),
+                handleAs: "json"
             });
         },
 
@@ -32,6 +35,7 @@ define([
                 // TODO: URL Encode or does dojo/request do that? (Probably not)
                 url = this.dataUrl + "/feeds/" + object._id;
             return request.put(url, {
+                headers: putHeaders,
                 data: JSON.stringify(object)
             });
         },
