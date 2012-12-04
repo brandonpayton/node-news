@@ -19,3 +19,6 @@
 [submodule "client/xstyle"]
 	path = client/xstyle
 	url = https://github.com/kriszyp/xstyle.git
+[submodule "client/mustache"]
+	path = client/mustache
+	url = git://github.com/janl/mustache.js.git
