@@ -30,9 +30,7 @@ require({
         'xstyle',
         'put-selector',
         'app',
-        'sax',
-        'feed-read',
-        'underscore',
+        'mustache',
 
         // For reference, this is what a more verbose package declaration looks like.
         { name: 'dbp', location: 'dbp', packageMap: {} }
