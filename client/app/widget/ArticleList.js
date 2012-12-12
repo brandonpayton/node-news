@@ -27,6 +27,7 @@ define([
 
             var self = this;
             var articleList = this._list = new OnDemandList({
+                showHeader: false,
                 getBeforePut: false,
                 renderRow: function(value) {
                     console.log("rendering row");
@@ -63,6 +64,8 @@ define([
                     return rowElement;
                 }
             }, listElement);
+            // TODO: Can this be done in the instantiation? At a glance, there is only a private var this._class which I don't want to specify.
+            articleList.set("className", "article-list");
         },
         
         postCreate: function() {

@@ -42,6 +42,7 @@ define([
             this.inherited(arguments);
 
             this._list = new FeedList({ }, this.feedListElement);
+            this._list.set("className", "feed-list");
             this._list.set("store", app.feedStore);
         },
 
