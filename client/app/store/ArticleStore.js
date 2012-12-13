@@ -21,8 +21,15 @@ define([
             return object[this.idProperty];
         },
 
+        get: function(id) {
+            return request(this._getArticleUrl(id), {
+                handleAs: "json"
+            }).then(readArticle);
+        },
+
         put: function(article, options) {
-            return request.put(this._feedUrl + "/article/" + encodeURIComponent(article._id), {
+            var articleUrl = this._getArticleUrl(this.getIdentity(article));
+            return request.put(articleUrl, {
                 headers: {
                     // DOJO TODO: File bug about case-sensitive Content-Type header. If the casing isn't like this, then the default content type overrides ours.
                     "Content-Type": "application/json"
@@ -40,6 +47,10 @@ define([
                 return results;
             });
             return QueryResults(asyncResults);
+        },
+
+        _getArticleUrl: function getArticleUrl(id) {
+            return this._feedUrl + "/article/" + encodeURIComponent(id);
         }
     });
 });

@@ -118,7 +118,7 @@ body,
 .dialogButtons {
   text-align: center;
 }
-.article-unread {
+article header.unread {
   font-weight: bold;
 }
 .dgrid {

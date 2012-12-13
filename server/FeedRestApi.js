@@ -11,7 +11,7 @@ define([
 
     function error(res, statusCode, err) {
         res.statusCode = statusCode;
-        res.end(http.STATUS_CODES[statusCode] + "\n" + err.toString());   
+        res.end(http.STATUS_CODES[statusCode] + (err ? "\n" + err : ""));   
     }
 
     function deferredErrorCallback(err) {
@@ -42,14 +42,6 @@ define([
     function serveJson(res, data) {
         res.setHeader('Content-Type', "application/json")
         res.end(JSON.stringify(data))
-    }
-
-    function completeResponse(res, dataPromise) {
-        return when(dataPromise, function(data) {
-            serveJson(res, data)
-        }, function(err) {
-            error(res, 500, err)
-        })
     }
 
     function createRequestHandlers(feedStore, feedUpdater) {
@@ -113,8 +105,10 @@ define([
                 }
             },
             article: {
+                "GET": function(feedId, articleId) {
+                    return feedStore.getArticleStore(feedId).get(articleId);
+                },
                 "PUT": function(feedId, articleId, data) {
-                    debugger;
                     data = lang.mixin({ _id: articleId }, data);
                     return feedStore.getArticleStore(feedId).put(data);
                 },
@@ -154,7 +148,7 @@ define([
                 while(parts.length > 0) {
                     var context = parts.shift(), contextId;
                     if(parts.length > 0) {
-                        contextId = parts.shift();
+                        contextId = decodeURIComponent(parts.shift());
                         handlerParams.push(contextId);
                     }
                 }
@@ -163,6 +157,18 @@ define([
                 if(!handler) {
                     unsupportedHttpMethod(res);
                 } else {
+                    function completeResponse(dataPromise) {
+                        return when(dataPromise, function(data) {
+                            if(method === "GET" && data === undefined) {
+                                error(res, 404);
+                            } else {
+                                serveJson(res, data)
+                            }
+                        }, function(err) {
+                            error(res, 500, err)
+                        })
+                    }
+
                     var result = null;
                     if(method in { PUT: 1, POST: 1 }) {
                         if(req.headers["content-type"] !== "application/json") {
@@ -171,10 +177,10 @@ define([
                         readAllData(req).then(function(data) {
                             debugger;
                             handlerParams.push(JSON.parse(data));
-                            completeResponse(res, handler.apply(null, handlerParams));
+                            completeResponse(handler.apply(null, handlerParams));
                         });
                     } else {
-                        completeResponse(res, handler.apply(null, handlerParams));
+                        completeResponse(handler.apply(null, handlerParams));
                     }
                 }
             } catch(err) {

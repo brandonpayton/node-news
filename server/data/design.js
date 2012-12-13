@@ -9,7 +9,14 @@ define({
         articles: {
             map: function(doc) {
                 if(doc.type === 'article' && !doc.deleted) {
-                    emit([ doc.feedId, doc.date ], doc);
+                    var docWithoutDescription = Object.keys(doc).reduce(function(memo, key) {
+                        if(key !== "description") {
+                            memo[key] = doc[key];
+                        }
+                        return memo;
+                    }, { });
+
+                    emit([ doc.feedId, doc.date ], docWithoutDescription);
                 }
             },
             reduce: function(keys, values, rereduce) {
