@@ -41,7 +41,7 @@ define([
         },
 
         remove: function(id) {
-            return request.delete(this.dataUrl + "/feeds/" + id);
+            return request.del(this._getFeedUrl(id));
         },
 
         query: function(query, options) {
@@ -60,6 +60,10 @@ define([
 
         getArticleStore: function(feedId) {
             return Observable(new ArticleStore(this.dataUrl + "/feed/" + encodeURIComponent(feedId)));
+        },
+
+        _getFeedUrl: function(id) {
+            return this.dataUrl + "/feed/" + encodeURIComponent(id)
         }
     });
 });
