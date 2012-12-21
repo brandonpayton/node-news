@@ -1,11 +1,11 @@
 define([
-       "dojo/_base/lang",
-       "dojo/_base/declare",
-       "dojo/request",
-       "dojo/Deferred",
-       "dojo/store/util/QueryResults",
-       "dojo/node!url",
-       "./ArticleStore"
+    "dojo/_base/lang",
+    "dojo/_base/declare",
+    "dojo/request",
+    "dojo/Deferred",
+    "dojo/store/util/QueryResults",
+    "dojo/node!url",
+    "./ArticleStore"
 ], function(lang, declare, request, Deferred, QueryResults, url, ArticleStore) {
     return declare([ ], {
         // Base URL
@@ -78,21 +78,32 @@ define([
 
         query: function(query, options) {
             var viewUrl = this._couchDbUrl + "/_design/news/_view/feeds";
-            if(query !== undefined) {
-                // TODO: Is there a functional way to reduce() properties? Object.keys() doesn't decend into prototypes' properties.
-                // TODO: Use io-query instead of this custom logic.
-                var props = [];
-                for(var p in query) {
-                    // TODO: Does the JSON need to be URL encoded for Couch?
-                    props.push(encodeURIComponent(p) + "=" + JSON.stringify(query[p]));
-                }
-                if(props.length > 0) {
-                    viewUrl += "?" + props.join("&");
-                }
+            query = query || {};
+
+            if(query.tag !== undefined) {
+                var params = [
+                    "startkey=" + JSON.stringify([ query.tag, 0 ]),
+                    "endkey=" + JSON.stringify([ query.tag, {} ])
+                ];
+                viewUrl = viewUrl + "?" + params.join("&"); 
+                console.log("VIEW", viewUrl);
             }
+            
             return QueryResults(request(viewUrl, { handleAs: "json" }).then(function(results) {
                 return results.rows.map(function(row) { return row.value; });
             }));
+        },
+
+        getTags: function() {
+            var viewUrl = this._couchDbUrl + "/_design/news/_view/tags?group_level=1";
+            return request(viewUrl, { handleAs: "json" }).then(function(results) {
+                return results.rows.map(function(row) {
+                    return {
+                        type: "tag",
+                        name: row.key
+                    };
+                });
+            });
         },
 
         getArticleStore: function(feedId) {

@@ -42,16 +42,6 @@ define([
 
             // TODO: Handle "error" event if there is one and create aggregate error notification article for this feed.
             feedparser.parseUrl(feed._id)
-            .on("meta", function(metadata) {
-                meta = metadata;
-                if(metadata.title && feed.title !== metadata.title) {
-                    feed.title = metadata.title;
-                    asyncJob.progress({
-                        type: "SavingFeed",
-                        promise: feedStore.put(feed)
-                    });
-                }
-            })
             .on("article", function(article) {
                 var articleStore = feedStore.getArticleStore(feed._id);
                 var articleId = articleStore.getIdentity(article);
@@ -82,7 +72,7 @@ define([
             .on("meta", function(metadata) {
                 feedSavePromise = feedStore.add({
                     url: url,
-                    title: metadata.title
+                    name: metadata.title
                 });
 
                 asyncJob.progress({

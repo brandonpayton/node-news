@@ -15,7 +15,6 @@ define([
 
     return declare([], {
         dataUrl: "../data",
-        idProperty: "_id",
 
         get: function() {
           throw new Error("Ouch");
@@ -45,17 +44,31 @@ define([
         },
 
         query: function(query, options) {
-            return QueryResults(request(this.dataUrl + "/feeds", {
-                handleAs: "json"
-            }));
+            query = query || {};
+            if(query.tag !== undefined) {
+                return QueryResults(request(this.dataUrl + "/tag/" + encodeURIComponent(query.tag), {
+                    handleAs: "json"
+                }));
+            } else {
+                return QueryResults(request(this.dataUrl + "/feeds", {
+                    handleAs: "json"
+                }));
+            }
         },
 
         getIdentity: function(object) {
-          return object[this.idProperty];
+          return object.type === "tag" ? object.name : object._id;
+        },
+
+        mayHaveChildren: function(object) {
+            return object.type === "tag";
         },
 
         getChildren: function(object) {
-            return this.query();
+            if(object.type !== "tag") {
+                throw new Error("Only a tag may have children.");
+            }
+            return this.query({tag: object.name });
         },
 
         getArticleStore: function(feedId) {

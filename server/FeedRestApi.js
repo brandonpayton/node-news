@@ -48,7 +48,14 @@ define([
         return {
             feeds: {
                 "GET": function() {
-                    return feedStore.query();
+                    return all({
+                        tags: feedStore.getTags(),
+                        taglessFeeds: feedStore.query({ tag: "" })
+                    }).then(function(result) {
+                        var tags = result.tags;
+                        tags.push.apply(tags, result.taglessFeeds);
+                        return tags;
+                    });
                 },
                 "POST": function(data) {
                     var url = data.url;
@@ -81,14 +88,17 @@ define([
                     });
                 }
             },
-            unread_article_counts: {
-                "GET": function() {
-
+            tag: {
+                "GET": function(tagName) {
+                    return feedStore.query({ tag: tagName });
                 }
             },
             feed: {
                 "GET": function(feedId) {
                     return feedStore.get(feedId);
+                },
+                "PUT": function(feedId, data) {
+                    return feedStore.put(lang.mixin({ _id: feedId }, data));
                 },
                 "DELETE": function(feedId) {
                     return feedStore.remove(feedId);
@@ -97,11 +107,6 @@ define([
             articles: {
                 "GET": function(feedId) {
                     return feedStore.getArticleStore(feedId).query();
-                }
-            },
-            unread_article_count: {
-                "GET": function(feedId) {
-
                 }
             },
             article: {
@@ -175,7 +180,6 @@ define([
                             throw new Error("Content-type must be application/json");
                         }
                         readAllData(req).then(function(data) {
-                            debugger;
                             handlerParams.push(JSON.parse(data));
                             completeResponse(handler.apply(null, handlerParams));
                         });

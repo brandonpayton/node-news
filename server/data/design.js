@@ -1,14 +1,39 @@
 define({
     language: "javascript",
     views: {
+        tags: {
+            map: function(doc) {
+                if(doc.type === 'feed') {
+                    var hasTags = doc.tags && doc.tags.length > 0;
+                    if(doc.tags && doc.tags.length > 0) {
+                        var tags = doc.tags.split(/\s+/);
+                        tags.forEach(function(tag) {
+                            emit(tag, 1);
+                        });
+                    }
+                }
+            },
+            reduce: function(keys, values, rereduce) {
+                return sum(values);
+            }
+        },
         feeds: {
             map: function(doc) {
-                if(doc.type === 'feed' && !doc.deleted) emit(doc.title, doc);
+                if(doc.type === 'feed' && !doc.deleted) {
+                    if(doc.tags && doc.tags.length > 0) {
+                        var tags = doc.tags.split(/\s+/);
+                        tags.forEach(function(tag) {
+                            emit([ tag, doc.name ], doc);
+                        });
+                    } else {
+                        emit([ "", doc.name ], doc);
+                    }
+                }
             }
         },
         articles: {
             map: function(doc) {
-                if(doc.type === 'article' && !doc.deleted) {
+                if(doc.type === 'article') {
                     var docWithoutDescription = Object.keys(doc).reduce(function(memo, key) {
                         if(key !== "description") {
                             memo[key] = doc[key];

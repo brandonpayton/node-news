@@ -5,9 +5,10 @@ define([
     "dojo/topic",
     "dojo/on",
     "app/main",
-    "dgrid/OnDemandList",
+    "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
     "dgrid/Selection",
+    "dgrid/tree",
     // Change to relative module ID.
     "app/widget/FeedPropertiesDialog",
     "dijit/_WidgetBase",
@@ -20,13 +21,14 @@ define([
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Button"
-], function(declare, lang, Deferred, topic, on, app, OnDemandList, Keyboard, Selection, FeedPropertiesDialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, Menu, MenuItem) {
+], function(declare, lang, Deferred, topic, on, app, OnDemandGrid, Keyboard, Selection, tree, FeedPropertiesDialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, Menu, MenuItem) {
 
-    var FeedList = declare([ OnDemandList, Keyboard, Selection ], {
+    var FeedList = declare([ OnDemandGrid, Keyboard, Selection ], {
         selectionMode: "single",
-        renderRow: function(value, options) {
-            return this.inherited(arguments, [ value.title, options ]);
-        }
+        showHeader: false,
+        columns: [
+            tree({ field: "name", allowDuplicates: true })
+        ]
     });
 
     return declare("app.widget.FeedPane", [ _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin ], {
@@ -47,7 +49,7 @@ define([
         buildRendering: function() {
             this.inherited(arguments);
 
-            var list = this._list = new FeedList({ }, this.feedListElement);
+            var list = this._list = new FeedList({ store: this._store }, this.feedListElement);
             list.set("className", "feed-list");
             list.set("store", app.feedStore);
 
