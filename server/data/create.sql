@@ -122,11 +122,12 @@ CREATE FUNCTION get_tags_and_tagless_feeds()
 RETURNS feed_or_tag
 AS
 $$
+    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag;
+    UNION
     SELECT 'feed' AS type, name, url, ARRAY[]::varchar(128)[] AS tags
         FROM feed
-        WHERE id NOT IN (SELECT feed_id FROM tag_to_feed)
-    UNION
-    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag;
+        WHERE url NOT IN (SELECT feed_url FROM tag_to_feed) AND NOT deleted
+        ORDER BY name;
 $$
 LANGUAGE SQL;
 
@@ -136,7 +137,8 @@ AS
 $$
     SELECT 'feed' AS type, name AS name, url AS url, ARRAY[]::varchar(128)[] AS tags
         FROM feed
-        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1);
+        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1) AND NOT deleted
+        ORDER BY name;
 $$
 LANGUAGE SQL;
 
