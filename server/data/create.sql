@@ -47,27 +47,34 @@ SET default_with_oids = false;
 -- Name: article; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
+CREATE TYPE news_object_type AS ENUM('feed', 'tag');
+CREATE TYPE feed_or_tag AS (
+    type news_object_type,
+    name varchar(256),
+    url varchar(2048),
+    tags varchar(128) ARRAY
+);
+
 CREATE TABLE article (
-    id uuid NOT NULL,
-    feed_id uuid NOT NULL,
+    -- NOTE: There doesn't appear to be any real length limit on RSS/atom article GUIDs. 
+    id char(256) NOT NULL,
+    feed_url varchar(2048) NOT NULL,
     date date NOT NULL,
-    link character varying(2048),
-    author character varying(128),
+    link varchar(2048),
+    author varchar(128),
     title text,
     summary text,
     description text,
     deleted boolean DEFAULT false NOT NULL
 );
 
-
 --
 -- Name: feed; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE feed (
-    id uuid NOT NULL,
-    url character varying(2048) NOT NULL,
-    name character varying(256) NOT NULL
+    name varchar(256) NOT NULL,
+    url varchar(2048)
 );
 
 
@@ -76,8 +83,8 @@ CREATE TABLE feed (
 --
 
 CREATE TABLE tag_to_feed (
-    tag character varying(128) NOT NULL,
-    feed_id uuid NOT NULL
+    tag varchar(128) NOT NULL,
+    feed_url varchar(2048) NOT NULL
 );
 
 
@@ -94,32 +101,59 @@ ALTER TABLE ONLY article
 --
 
 ALTER TABLE ONLY feed
-    ADD CONSTRAINT feed_pkey PRIMARY KEY (id);
-
-
---
--- Name: feed_url_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY feed
-    ADD CONSTRAINT feed_url_key UNIQUE (url);
-
+    ADD CONSTRAINT feed_pkey PRIMARY KEY (url);
 
 --
 -- Name: tag_to_feed_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY tag_to_feed
-    ADD CONSTRAINT tag_to_feed_pkey PRIMARY KEY (tag, feed_id);
+    ADD CONSTRAINT tag_to_feed_pkey PRIMARY KEY (tag, feed_url);
 
 
 --
--- Name: article_feed_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: article_feed_url_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY article
-    ADD CONSTRAINT article_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES feed(id);
+    ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES feed(url);
 
+CREATE TYPE news_object_type AS ENUM('feed', 'tag');
+CREATE TYPE feed_or_tag AS (
+    type news_object_type,
+    name varchar(256),
+    url varchar(2048),
+    tags varchar(128) ARRAY
+);
+
+CREATE FUNCTION get_tags_and_tagless_feeds()
+RETURNS feed_or_tag
+AS
+$$
+    SELECT 'feed' AS type, name, url, ARRAY[]::varchar(128)[] AS tags
+        FROM feed
+        WHERE id NOT IN (SELECT feed_id FROM tag_to_feed)
+    UNION
+    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag;
+$$
+LANGUAGE SQL;
+
+CREATE FUNCTION get_feeds_with_tag(tag varchar(128))
+RETURNS feed_or_tag
+AS
+$$
+    SELECT 'feed' AS type, name AS name, url AS url, ARRAY[]::varchar(128)[] AS tags
+        FROM feed
+        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1);
+$$
+LANGUAGE SQL;
+
+
+-- save_feed
+-- get_feeds_with_tag
+-- get_tags_and_tagless_feeds
+-- 
+-- save_article
 
 --
 -- PostgreSQL database dump complete
