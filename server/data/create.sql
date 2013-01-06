@@ -118,14 +118,6 @@ ALTER TABLE ONLY tag_to_feed
 ALTER TABLE ONLY article
     ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES feed(url);
 
-CREATE TYPE news_object_type AS ENUM('feed', 'tag');
-CREATE TYPE feed_or_tag AS (
-    type news_object_type,
-    name varchar(256),
-    url varchar(2048),
-    tags varchar(128) ARRAY
-);
-
 CREATE FUNCTION get_tags_and_tagless_feeds()
 RETURNS feed_or_tag
 AS
@@ -148,11 +140,21 @@ $$
 $$
 LANGUAGE SQL;
 
+CREATE FUNCTION save_feed(
+    url varchar(2048),
+    name varchar(256)
+)
+RETURNS void
+AS
+$$
+    IF EXISTS(SELECT 1 FROM feed WHERE url = $1) THEN
+        UPDATE feed SET name = $2 WHERE url = $1;
+    ELSE
+        INSERT INTO feed (url, name) VALUES ($1, $2);
+    END IF
+$$
+LANGUAGE SQL;
 
--- save_feed
--- get_feeds_with_tag
--- get_tags_and_tagless_feeds
--- 
 -- save_article
 
 --
