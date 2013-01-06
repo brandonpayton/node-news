@@ -18,7 +18,8 @@
   "dependencies": {
     "feedparser": "0.10.x",
     "send": "0.0.4",
-    "couch-client": "0.0.4"
+    "pg": "0.10.x",
+    "guid": "0.0.x"
   },
   "devDependencies": {},
   "optionalDependencies": {},

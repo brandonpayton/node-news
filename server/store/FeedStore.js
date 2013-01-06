@@ -1,19 +1,17 @@
 define([
     "dojo/_base/lang",
     "dojo/_base/declare",
-    "dojo/request",
     "dojo/Deferred",
     "dojo/store/util/QueryResults",
-    "dojo/node!url",
-    "./ArticleStore"
-], function(lang, declare, request, Deferred, QueryResults, url, ArticleStore) {
+    "./ArticleStore",
+    "../nodeCallback"
+], function(lang, declare, Deferred, QueryResults, ArticleStore, nodeCallback) {
     return declare([ ], {
-        // Base URL
-        _couchDbUrl: null,
+        _postgresClient: null,
 
         // TODO: How to document this in Dojo format?
-        constructor: function(couchDbUrl) {
-            this._couchDbUrl = couchDbUrl;
+        constructor: function(postgresClient) {
+            this._postgresClient = postgresClient;
         },
 
         get: function(id) {
@@ -77,24 +75,45 @@ define([
         },
 
         query: function(query, options) {
-            var viewUrl = this._couchDbUrl + "/_design/news/_view/feeds";
             query = query || {};
-
-            if(query.tag !== undefined) {
-                var params = [
-                    "startkey=" + JSON.stringify([ query.tag, 0 ]),
-                    "endkey=" + JSON.stringify([ query.tag, {} ])
-                ];
-                viewUrl = viewUrl + "?" + params.join("&"); 
-                console.log("VIEW", viewUrl);
-            }
             
-            return QueryResults(request(viewUrl, { handleAs: "json" }).then(function(results) {
-                return results.rows.map(function(row) { return row.value; });
+            var asyncResults = new Deferred();
+            if(query.tag !== undefined) {
+                this._postgresClient.query(
+                    "SELECT get_feeds_with_tag(tag := $1);",
+                    [ query.tag ],
+                    nodeCallback(asyncResults)
+                );
+            } else {
+                this._postgresClient.query(
+                    "SELECT get_tags_and_tagless_feeds();",
+                    nodeCallback(asyncResults)
+                );
+            }
+
+            return QueryResults(asyncResults.then(function(result) {
+                return result.rows.map(function(row) {
+                    if(row.type === "tag") {
+                        return {
+                            type: "tag",
+                            name: row.name
+                        };
+                    } else if(row.type === "feed") {
+                        return {
+                            type: "feed",
+                            id: row.id,
+                            name: row.name,
+                            url: row.url
+                        }
+                    } else {
+                        throw new Error("Unknown row type: " + row.type);
+                    }
+                });
             }));
         },
 
         getTags: function() {
+            return [];
             var viewUrl = this._couchDbUrl + "/_design/news/_view/tags?group_level=1";
             return request(viewUrl, { handleAs: "json" }).then(function(results) {
                 return results.rows.map(function(row) {
