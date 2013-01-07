@@ -118,6 +118,13 @@ ALTER TABLE ONLY tag_to_feed
 ALTER TABLE ONLY article
     ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES feed(url);
 
+CREATE FUNCTION get_feed(url varchar(2048))
+RETURNS feed
+$$
+    SELECT * FROM feed WHERE url = $1;
+$$
+LANGUAGE SQL;
+
 CREATE FUNCTION get_tags_and_tagless_feeds()
 RETURNS feed_or_tag
 AS
@@ -144,7 +151,8 @@ LANGUAGE SQL;
 
 CREATE FUNCTION save_feed(
     url varchar(2048),
-    name varchar(256)
+    name varchar(256),
+    tags varchar(128)[]
 )
 RETURNS void
 AS
@@ -154,6 +162,14 @@ $$
     ELSE
         INSERT INTO feed (url, name) VALUES ($1, $2);
     END IF
+$$
+LANGUAGE SQL;
+
+CREATE FUNCTION soft_delete_feed(url varchar(2048))
+RETURNS void
+AS
+$$
+    UPDATE feed SET deleted = TRUE WHERE url = $1;
 $$
 LANGUAGE SQL;
 
