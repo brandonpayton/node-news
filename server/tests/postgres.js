@@ -29,8 +29,9 @@ define([
         },
         function runPsqlScript(t) {
             var databaseName = "news_test_postgres";
-            var testCommands = dojoString.substitute(creationSql, { database_name: databaseName });
-            testCommands += "\nDROP DATABASE " + databaseName + ";";
+            var testCommands =
+                "DROP DATABASE " + databaseName + ";\n" +
+                dojoString.substitute(creationSql, { database_name: databaseName });
 
             var dfd = new doh.Deferred();
             postgres.runPsqlScript(testCommands).then(
@@ -41,7 +42,7 @@ define([
                 function(output) {
                     if(output.type === "stdout") {
                         process.stdin.write(output.data);
-                    } else if(info.type === "stderr") {
+                    } else if(output.type === "stderr") {
                         process.stderr.write(output.data);
                     }
                 }

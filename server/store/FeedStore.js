@@ -20,7 +20,16 @@ define([
                 [ id ],
                 nodeCallback(dfdGet)
             );
-            return dfdGet;
+            return dfdGet.then(function(result) {
+                var rows = result.rows;
+                if(rows.length === 1) {
+                    return rows[0];
+                } else if(rows.length === 0) {
+                    return undefined;
+                } else {
+                    throw new Error("Retrieved more than one result for id: '" + id + "'");
+                }
+            });
         },
 
         // OPP: Update dojo/store docs to cover a resolve/return convention for add() and put().
@@ -80,7 +89,6 @@ define([
                     } else if(row.type === "feed") {
                         return {
                             type: "feed",
-                            id: row.id,
                             name: row.name,
                             url: row.url
                         }

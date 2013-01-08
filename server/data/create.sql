@@ -39,42 +39,140 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 SET search_path = public, pg_catalog;
 
+--
+-- Name: news_object_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE news_object_type AS ENUM (
+    'feed',
+    'tag'
+);
+
+
+--
+-- Name: feed_or_tag; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE feed_or_tag AS (
+	type news_object_type,
+	name character varying(256),
+	url character varying(2048),
+	tags character varying(128)[]
+);
+
+CREATE TYPE typed_feed AS (
+	type news_object_type,
+	name character varying(256),
+	url character varying(2048),
+    deleted boolean,
+	tags character varying(128)[]
+);
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
-
---
--- Name: article; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TYPE news_object_type AS ENUM('feed', 'tag');
-CREATE TYPE feed_or_tag AS (
-    type news_object_type,
-    name varchar(256),
-    url varchar(2048),
-    tags varchar(128) ARRAY
-);
-
-CREATE TABLE article (
-    -- NOTE: There doesn't appear to be any real length limit on RSS/atom article GUIDs. 
-    id char(256) NOT NULL,
-    feed_url varchar(2048) NOT NULL,
-    date date NOT NULL,
-    link varchar(2048),
-    author varchar(128),
-    title text,
-    summary text,
-    description text,
-    deleted boolean DEFAULT false NOT NULL
-);
 
 --
 -- Name: feed; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE feed (
-    name varchar(256) NOT NULL,
-    url varchar(2048)
+    name character varying(256) NOT NULL,
+    url character varying(2048) NOT NULL,
+    deleted boolean DEFAULT TRUE
+);
+
+
+--
+-- Name: get_feed(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION get_feed(url character varying(2048))
+RETURNS typed_feed
+    LANGUAGE sql
+    AS $_$
+    SELECT 'feed'::news_object_type, feed.name, feed.url, feed.deleted, get_feed_tags($1) FROM feed WHERE feed.url = $1;
+$_$;
+
+CREATE FUNCTION get_feed_tags(url varchar(2048)) RETURNS varchar(128)[]
+    LANGUAGE sql
+    AS $_$
+    SELECT array_agg(tag) FROM tag_to_feed WHERE feed_url = $1;
+$_$;
+
+--
+-- Name: get_feeds_with_tag(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION get_feeds_with_tag(tag character varying) RETURNS feed_or_tag
+    LANGUAGE sql
+    AS $_$
+    SELECT 'feed'::news_object_type AS type, name AS name, url AS url, ARRAY[]::varchar(128)[] AS tags
+        FROM feed
+        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1) AND NOT deleted
+        ORDER BY name;
+$_$;
+
+
+--
+-- Name: get_tags_and_tagless_feeds(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION get_tags_and_tagless_feeds() RETURNS feed_or_tag
+    LANGUAGE sql
+    AS $$
+    SELECT 'tag'::news_object_type AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag
+    UNION
+    SELECT 'feed'::news_object_type AS type, name, url, ARRAY[]::varchar(128)[] AS tags
+        FROM feed
+        WHERE url NOT IN (SELECT feed_url FROM tag_to_feed) AND NOT deleted
+        ORDER BY name;
+$$;
+
+
+--
+-- Name: save_feed(character varying, character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION save_feed(url character varying, name character varying, tags character varying[]) RETURNS void
+    LANGUAGE plpgsql
+    AS $_$
+    BEGIN
+        IF EXISTS(SELECT 1 FROM feed WHERE feed.url = $1) THEN
+            UPDATE feed SET name = $2 WHERE feed.url = $1;
+        ELSE
+            INSERT INTO feed (url, name) VALUES ($1, $2);
+        END IF;
+    END;
+$_$;
+
+
+--
+-- Name: soft_delete_feed(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION soft_delete_feed(url character varying) RETURNS void
+    LANGUAGE sql
+    AS $_$
+    UPDATE feed SET deleted = TRUE WHERE url = $1;
+$_$;
+
+
+--
+-- Name: article; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE article (
+    id character(256) NOT NULL,
+    feed_url character varying(2048) NOT NULL,
+    date date NOT NULL,
+    link character varying(2048),
+    author character varying(128),
+    title text,
+    summary text,
+    description text,
+    deleted boolean DEFAULT false NOT NULL
 );
 
 
@@ -83,8 +181,8 @@ CREATE TABLE feed (
 --
 
 CREATE TABLE tag_to_feed (
-    tag varchar(128) NOT NULL,
-    feed_url varchar(2048) NOT NULL
+    tag character varying(128) NOT NULL,
+    feed_url character varying(2048) NOT NULL
 );
 
 
@@ -103,6 +201,7 @@ ALTER TABLE ONLY article
 ALTER TABLE ONLY feed
     ADD CONSTRAINT feed_pkey PRIMARY KEY (url);
 
+
 --
 -- Name: tag_to_feed_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
@@ -118,62 +217,6 @@ ALTER TABLE ONLY tag_to_feed
 ALTER TABLE ONLY article
     ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES feed(url);
 
-CREATE FUNCTION get_feed(url varchar(2048))
-RETURNS feed
-$$
-    SELECT * FROM feed WHERE url = $1;
-$$
-LANGUAGE SQL;
-
-CREATE FUNCTION get_tags_and_tagless_feeds()
-RETURNS feed_or_tag
-AS
-$$
-    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag;
-    UNION
-    SELECT 'feed' AS type, name, url, ARRAY[]::varchar(128)[] AS tags
-        FROM feed
-        WHERE url NOT IN (SELECT feed_url FROM tag_to_feed) AND NOT deleted
-        ORDER BY name;
-$$
-LANGUAGE SQL;
-
-CREATE FUNCTION get_feeds_with_tag(tag varchar(128))
-RETURNS feed_or_tag
-AS
-$$
-    SELECT 'feed' AS type, name AS name, url AS url, ARRAY[]::varchar(128)[] AS tags
-        FROM feed
-        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1) AND NOT deleted
-        ORDER BY name;
-$$
-LANGUAGE SQL;
-
-CREATE FUNCTION save_feed(
-    url varchar(2048),
-    name varchar(256),
-    tags varchar(128)[]
-)
-RETURNS void
-AS
-$$
-    IF EXISTS(SELECT 1 FROM feed WHERE url = $1) THEN
-        UPDATE feed SET name = $2 WHERE url = $1;
-    ELSE
-        INSERT INTO feed (url, name) VALUES ($1, $2);
-    END IF
-$$
-LANGUAGE SQL;
-
-CREATE FUNCTION soft_delete_feed(url varchar(2048))
-RETURNS void
-AS
-$$
-    UPDATE feed SET deleted = TRUE WHERE url = $1;
-$$
-LANGUAGE SQL;
-
--- save_article
 
 --
 -- PostgreSQL database dump complete

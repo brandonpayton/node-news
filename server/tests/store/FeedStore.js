@@ -4,14 +4,17 @@ define([
 	'doh/main',
     'server/postgres',
     'server/nodeCallback',
+    'dojo/_base/lang',
     'dojo/string',
     'dojo/Deferred',
     'dojo/node!child_process',
     'dojo/text!server/data/create.sql'
-], function(require, FeedStore, doh, postgres, nodeCallback, dojoString, Deferred, child_process, creationSql) {
+], function(require, FeedStore, doh, postgres, nodeCallback, lang, dojoString, Deferred, child_process, creationSqlTemplate) {
 
     var databaseName = "news_test_feedstore",
-        creationSql = dojoString.substitute(creationSql, { database_name: databaseName }),
+        creationSql = 
+            "DROP DATABASE " + databaseName + ";\n" +
+            dojoString.substitute(creationSqlTemplate, { database_name: databaseName }),
         feeds,
         feedsByTag;
 
@@ -98,9 +101,10 @@ define([
                 var store = new FeedStore(client);
 
                 store.add(feed).then(function() {
-                    return dfd.get(store.getIdentity(feed));
+                    return store.get(store.getIdentity(feed));
                 }).then(dfd.getTestCallback(function(retrievedFeed) {
                     Object.keys(feed).forEach(function(key) {
+                        debugger;
                         t.is(feed[key], retrievedFeed[key]);
                     });
                 }), lang.hitch(dfd, "errback"));
@@ -112,7 +116,8 @@ define([
                 var feed = {
                     type: 'feed',
                     name: 'IEBlog',
-                    url: 'http://blogs.msdn.com/b/ie/rss.aspx'
+                    url: 'http://blogs.msdn.com/b/ie/rss.aspx',
+                    tags: [ 'ms', 'ie' ]
                 };
                 var store = new FeedStore(client);
 
@@ -129,7 +134,7 @@ define([
                 }), lang.hitch(dfd, "errback"));
                 return dfd;
             },
-            function delete() {
+            function remove() {
                 var dfd = new doh.Deferred();
 
                 var feed = {
@@ -153,7 +158,7 @@ define([
                             return store.getIdentity(feed) === store.getIdentity(item);
                         }));
                     }));
-                }), lang.hitch(dfd, "errback"));
+                }, lang.hitch(dfd, "errback"));
 
                 return dfd;
             }

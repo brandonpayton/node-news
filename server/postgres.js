@@ -24,6 +24,9 @@ define([
             return dfdConnection.promise;
         },
         runPsqlScript: function(scriptStr) {
+            // TODO: Test this ON_ERROR_STOP
+            scriptStr = "\\set ON_ERROR_STOP TRUE;\n" + scriptStr;
+
             var psql = spawn("psql");
 
             var dfdCompletion = new Deferred();
