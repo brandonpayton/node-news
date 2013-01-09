@@ -94,6 +94,7 @@ define([
                 ];
                 var store = new FeedStore(client);
                 store.query({ tag: "language" }).then(dfd.getTestCallback(function(results) {
+                    debugger;
                     results.forEach(function(result, index) {
                         t.assertEqual(result.url, EXPECTED_RESULT_URLS[index]);
                     });
@@ -126,24 +127,27 @@ define([
                     type: 'feed',
                     name: 'IEBlog',
                     url: 'http://blogs.msdn.com/b/ie/rss.aspx',
+                    deleted: false,
                     tags: [ 'ms', 'ie' ]
                 };
                 var store = new FeedStore(client);
 
                 store.add(feed).then(function() {
+                    debugger;
                     var EXPECTED_NAME = "Internet Explorer Blog";
                     feed.name = EXPECTED_NAME;
                     return store.put(feed);
                 }).then(function() {
                     return store.get(store.getIdentity(feed));
                 }).then(dfd.getTestCallback(function(retrievedFeed) {
+                    debugger;
                     Object.keys(feed).forEach(function(key) {
                         t.assertEqual(feed[key], retrievedFeed[key]);
                     });
                 }), lang.hitch(dfd, "errback"));
                 return dfd;
             },
-            function remove() {
+            function remove(t) {
                 var dfd = new doh.Deferred();
 
                 var feed = {

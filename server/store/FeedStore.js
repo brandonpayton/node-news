@@ -6,6 +6,34 @@ define([
     "./ArticleStore",
     "../nodeCallback"
 ], function(lang, declare, Deferred, QueryResults, ArticleStore, nodeCallback) {
+
+    function serializeTags(tags) {
+        if(tags) {
+            return "{" + tags.join(",") + "}";
+        } else {
+            return "{}";
+        }
+    }
+    function deserializeTags(tagsStr) {
+        if(tagsStr === null) {
+            return [];
+        } else {
+            tagsStr = tagsStr.replace(/^{/, "").replace(/}$/, "");
+            var match = tagsStr.match(/([^,]+)(?=,|$)/g);
+            return match !== null ? match : [];
+        }
+    }
+
+    function rowToFeed(row) {
+        return {
+            type: "feed",
+            name: row.name,
+            url: row.url,
+            deleted: row.deleted,
+            tags: deserializeTags(row.tags)
+        }
+    }
+
     return declare([ ], {
         _postgresClient: null,
 
@@ -23,7 +51,7 @@ define([
             return dfdGet.then(function(result) {
                 var rows = result.rows;
                 if(rows.length === 1) {
-                    return rows[0];
+                    return rowToFeed(rows[0]);
                 } else if(rows.length === 0) {
                     return undefined;
                 } else {
@@ -37,6 +65,7 @@ define([
             return this.put(object, options);
         },
 
+        // TODO: Validate tags and limit them to the typical set of identifier characters.
         put: function(object, options) {
             // TODO: Consider explicit arg validation like the bake() operation I did for IGC. 
             if(object.type !== "feed") {
@@ -46,7 +75,7 @@ define([
             var dfdPut = new Deferred();
             this._postgresClient.query(
                 "SELECT save_feed(url := $1, name := $2, tags := $3);",
-                [ object.url, object.name, object.tags ],
+                [ object.url, object.name, serializeTags(object.tags) ],
                 nodeCallback(dfdPut)
             );
             return dfdPut.promise;
@@ -88,11 +117,7 @@ define([
                             name: row.name
                         };
                     } else if(row.type === "feed") {
-                        return {
-                            type: "feed",
-                            name: row.name,
-                            url: row.url
-                        }
+                        return rowToFeed(row);
                     } else {
                         throw new Error("Unknown row type: " + row.type);
                     }
