@@ -51,24 +51,34 @@ define([
         doh.register("FeedStore", [
             function getIdentityForFeed(t) {
                 var store = new FeedStore();
-                t.is("expectedValue", store.getIdentity({ type: "feed", name: "a feed", url: "expectedValue" }));
+                t.assertEqual("expectedValue", store.getIdentity({ type: "feed", name: "a feed", url: "expectedValue" }));
             },
             function getIdentityForTag(t) {
                 var store = new FeedStore();
-                t.is("expectedValue", store.getIdentity({ type: "tag", name: "expectedValue" })); 
+                t.assertEqual("expectedValue", store.getIdentity({ type: "tag", name: "expectedValue" })); 
             },
             function queryTagsAndTaglessFeeds(t) {
                 var dfd = new doh.Deferred();
 
                 // TODO: Require feed and tag CSV data and verify against that rather than using knowledge obtained from a human glancing at those files.
+                // NOTE: This test has the weakness that it must run before the add, insert, delete tests.
+                var EXPECTED_TAGS = [ "dojo", "language", "perl", "web" ];
                 var EXPECTED_RESULT_URLS = [
                     "https://blog.mozilla.org/security/feed/",
                     "http://drmcninja.com/feed/"
                 ];
                 var store = new FeedStore(client);
                 store.query().then(dfd.getTestCallback(function(results) {
-                    results.forEach(function(result, index) {
-                        t.is(result.url, EXPECTED_RESULT_URLS[index]);
+                    t.assertTrue(results.every(function(item) { return item.type in { tag: 1, feed: 1}; }));
+
+                    var tags = results.filter(function(item) { return item.type === "tag"; });
+                    tags.forEach(function(tag, i) {
+                        t.assertEqual(tag.name, EXPECTED_TAGS[i]);
+                    });
+
+                    var feeds = results.filter(function(item) { return item.type === "feed"; });
+                    feeds.forEach(function(feed, i) {
+                        t.assertEqual(feed.url, EXPECTED_RESULT_URLS[i]);
                     });
                 }), lang.hitch(dfd, "errback"));
 
@@ -79,13 +89,13 @@ define([
 
                 // TODO: Require feed and tag CSV data and verify against that rather than using knowledge obtained from a human glancing at those files.
                 var EXPECTED_RESULT_URLS = [
-                    'http://www.modernperlbooks.com/mt/atom.xml',
-                    'https://blog.mozilla.org/javascript/feed/'
+                    'https://blog.mozilla.org/javascript/feed/',
+                    'http://www.modernperlbooks.com/mt/atom.xml'
                 ];
                 var store = new FeedStore(client);
                 store.query({ tag: "language" }).then(dfd.getTestCallback(function(results) {
                     results.forEach(function(result, index) {
-                        t.is(result.url, EXPECTED_RESULT_URLS[index]);
+                        t.assertEqual(result.url, EXPECTED_RESULT_URLS[index]);
                     });
                 }), lang.hitch(dfd, "errback"));
 
@@ -104,8 +114,7 @@ define([
                     return store.get(store.getIdentity(feed));
                 }).then(dfd.getTestCallback(function(retrievedFeed) {
                     Object.keys(feed).forEach(function(key) {
-                        debugger;
-                        t.is(feed[key], retrievedFeed[key]);
+                        t.assertEqual(feed[key], retrievedFeed[key]);
                     });
                 }), lang.hitch(dfd, "errback"));
                 return dfd;
@@ -129,7 +138,7 @@ define([
                     return store.get(store.getIdentity(feed));
                 }).then(dfd.getTestCallback(function(retrievedFeed) {
                     Object.keys(feed).forEach(function(key) {
-                        t.is(feed[key], retrievedFeed[key]);
+                        t.assertEqual(feed[key], retrievedFeed[key]);
                     });
                 }), lang.hitch(dfd, "errback"));
                 return dfd;
@@ -149,12 +158,12 @@ define([
                 }).then(function() {
                     // Verify the deleted flag is set.
                     return store.get(store.getIdentity(feed)).then(dfd.getTestCallback(function(retrievedFeed) {
-                        t.is(true, feed.deleted);
+                        t.assertEqual(true, feed.deleted);
                     }));
                 }).then(function() {
                     // Verify that a query does not include the feed.
                     return store.query({ tag: 'norway' }).then(dfd.getTestCallback(function(queryResults) {
-                        t.is(false, queryResults.some(function(item) {
+                        t.assertEqual(false, queryResults.some(function(item) {
                             return store.getIdentity(feed) === store.getIdentity(item);
                         }));
                     }));

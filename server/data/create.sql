@@ -80,7 +80,7 @@ SET default_with_oids = false;
 CREATE TABLE feed (
     name character varying(256) NOT NULL,
     url character varying(2048) NOT NULL,
-    deleted boolean DEFAULT TRUE
+    deleted boolean DEFAULT FALSE
 );
 
 
@@ -105,10 +105,10 @@ $_$;
 -- Name: get_feeds_with_tag(character varying); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION get_feeds_with_tag(tag character varying) RETURNS feed_or_tag
+CREATE FUNCTION get_feeds_with_tag(tag character varying) RETURNS SETOF feed_or_tag
     LANGUAGE sql
     AS $_$
-    SELECT 'feed'::news_object_type AS type, name AS name, url AS url, ARRAY[]::varchar(128)[] AS tags
+    SELECT 'feed'::news_object_type AS type, feed.name AS name, feed.url AS url, get_feed_tags(url := url) AS tags
         FROM feed
         WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1) AND NOT deleted
         ORDER BY name;
@@ -119,15 +119,15 @@ $_$;
 -- Name: get_tags_and_tagless_feeds(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION get_tags_and_tagless_feeds() RETURNS feed_or_tag
+CREATE FUNCTION get_tags_and_tagless_feeds() RETURNS SETOF feed_or_tag
     LANGUAGE sql
     AS $$
     SELECT 'tag'::news_object_type AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag
-    UNION
-    SELECT 'feed'::news_object_type AS type, name, url, ARRAY[]::varchar(128)[] AS tags
+    UNION ALL
+    SELECT 'feed'::news_object_type AS type, name, url, get_feed_tags(url := url) AS tags
         FROM feed
         WHERE url NOT IN (SELECT feed_url FROM tag_to_feed) AND NOT deleted
-        ORDER BY name;
+    ORDER BY type DESC, name;
 $$;
 
 

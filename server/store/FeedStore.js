@@ -80,6 +80,7 @@ define([
             }
 
             return QueryResults(asyncResults.then(function(result) {
+                var q = query;
                 return result.rows.map(function(row) {
                     if(row.type === "tag") {
                         return {
