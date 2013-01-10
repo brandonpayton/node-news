@@ -45,7 +45,8 @@ SET search_path = public, pg_catalog;
 
 CREATE TYPE news_object_type AS ENUM (
     'feed',
-    'tag'
+    'tag',
+    'article'
 );
 
 
@@ -68,6 +69,18 @@ CREATE TYPE typed_feed AS (
 	tags character varying(128)[]
 );
 
+CREATE TYPE typed_article AS (
+    type news_object_type,
+    id character(256),
+    feed_url character varying(2048),
+    date date,
+    link character varying(2048),
+    author character varying(128),
+    title text,
+    summary text,
+    description text,
+    deleted boolean
+);
 
 SET default_tablespace = '';
 
@@ -144,6 +157,12 @@ CREATE FUNCTION save_feed(url character varying, name character varying, tags ch
         ELSE
             INSERT INTO feed (url, name) VALUES ($1, $2);
         END IF;
+
+        -- TODO: Only call unnest once and assign to var. ... not doing it now because I don't know how to do that w/ postgres.
+        -- Removing all and readding tags for simplicity.
+        DELETE FROM tag_to_feed WHERE url = $1;
+        INSERT INTO tag_to_feed (tag, feed_url)
+            SELECT *, $1 FROM (SELECT unnest($3)) AS tags;
     END;
 $_$;
 
@@ -158,6 +177,65 @@ CREATE FUNCTION soft_delete_feed(url character varying) RETURNS void
     UPDATE feed SET deleted = TRUE WHERE url = $1;
 $_$;
 
+
+CREATE FUNCTION get_article(id char) RETURNS typed_article
+    LANGUAGE sql
+    AS $_$
+    SELECT 'article'::news_object_type, * FROM article WHERE id = $1;
+$_$;
+
+CREATE FUNCTION soft_delete_article(id char) RETURNS void
+    LANGUAGE sql
+    AS $_$
+    UPDATE article SET deleted = TRUE WHERE id = $1;
+$_$;
+
+CREATE FUNCTION get_articles_for_feed(feed_url varchar) RETURNS SETOF typed_article
+    LANGUAGE sql
+    AS $_$
+    SELECT 'article'::news_object_type, * FROM article
+        WHERE feed_url = $1
+        ORDER BY date;
+$_$;
+
+CREATE FUNCTION get_articles_for_tag(feed_url varchar) RETURNS SETOF typed_article
+    LANGUAGE sql
+    AS $_$
+    SELECT 'article'::news_object_type, * FROM article 
+        WHERE feed_url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1)
+        ORDER BY date;
+$_$;
+
+CREATE FUNCTION save_article(
+    id char,
+    feed_url varchar,
+    date date,
+    link char,
+    author varchar,
+    title text,
+    summary text,
+    description text,
+    deleted boolean
+) RETURNS void
+    LANGUAGE plpgsql
+    AS $_$
+    
+    IF EXISTS(SELECT 1 FROM article WHERE article.id = id) THEN
+        UPDATE article SET
+            article.feed_url = feed_url,
+            article.date = date,
+            article.link = link,
+            article.author = author,
+            article.title = title,
+            article.summary = summary,
+            article.description = description,
+            article.deleted = deleted
+                WHERE article.id = id
+    ELSE
+        INSERT INTO article (id, feed_url, date, link, author, title, summary, description, deleted)
+            VALUES (id, feed_url, date, link, author, title, summary, description, deleted);
+    END;
+$_$;
 
 --
 -- Name: article; Type: TABLE; Schema: public; Owner: -; Tablespace: 

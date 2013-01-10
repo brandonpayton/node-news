@@ -27,27 +27,31 @@ define([
                 this._client && this._client.end();
             }
         },
-        function runPsqlScript(t) {
-            var databaseName = "news_test_postgres";
-            var testCommands =
-                "DROP DATABASE " + databaseName + ";\n" +
-                dojoString.substitute(creationSql, { database_name: databaseName });
+        {
+            name: "runPsqlScript",
+            timeout: 3000,
+            runTest: function runPsqlScript(t) {
+                var databaseName = "news_test_postgres";
+                var testCommands =
+                    "DROP DATABASE " + databaseName + ";\n" +
+                    dojoString.substitute(creationSql, { database_name: databaseName });
 
-            var dfd = new doh.Deferred();
-            postgres.runPsqlScript(testCommands).then(
-                dfd.getTestCallback(function() {
-                    // Do nothing.
-                }),
-                lang.hitch(dfd, "errback"),
-                function(output) {
-                    if(output.type === "stdout") {
-                        process.stdin.write(output.data);
-                    } else if(output.type === "stderr") {
-                        process.stderr.write(output.data);
+                var dfd = new doh.Deferred();
+                postgres.runPsqlScript(testCommands).then(
+                    dfd.getTestCallback(function() {
+                        // Do nothing.
+                    }),
+                    lang.hitch(dfd, "errback"),
+                    function(output) {
+                        if(output.type === "stdout") {
+                            process.stdin.write(output.data);
+                        } else if(output.type === "stderr") {
+                            process.stderr.write(output.data);
+                        }
                     }
-                }
-            );
-            return dfd;
+                );
+                return dfd;
+            }
         }
     ]);
 });
