@@ -26,8 +26,8 @@ define([
     }
     function insertTestData() {
         var dfdInsert = new Deferred(),
-            feedDataFileName = require.toUrl("./feedData_orderedByName.csv"),
-            tagDataFileName = require.toUrl("./tagData_orderedByTagAndFeedName.csv");
+            feedDataFileName = require.toUrl("./feedData.csv"),
+            tagDataFileName = require.toUrl("./tagData.csv");
 
         var sqlQuery = 
             "COPY feed (url, name) FROM '" + feedDataFileName + "' WITH csv;" +
