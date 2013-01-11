@@ -41,14 +41,7 @@ define([
                     dfd.getTestCallback(function() {
                         // Do nothing.
                     }),
-                    lang.hitch(dfd, "errback"),
-                    function(output) {
-                        if(output.type === "stdout") {
-                            process.stdin.write(output.data);
-                        } else if(output.type === "stderr") {
-                            process.stderr.write(output.data);
-                        }
-                    }
+                    lang.hitch(dfd, "errback")
                 );
                 return dfd;
             }
