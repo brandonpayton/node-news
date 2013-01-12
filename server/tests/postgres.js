@@ -24,7 +24,28 @@ define([
                 return dfd;
             },
             tearDown: function() {
-                this._client && this._client.end();
+                this._client.end();
+            }
+        },
+        {
+            name: "client query",
+            runTest: function(t) {
+                var dfd = new doh.Deferred();
+                var self = this;
+
+                postgres.createClient("tcp://localhost/postgres").then(function(client) {
+                    self._client = client;
+                    client.query("SELECT 123 AS value;").then(dfd.getTestCallback(function(result) {
+                        t.assertEqual(1, result.rows.length);
+                        debugger;
+                        t.assertEqual(123, result.rows[0].value);
+                    }), lang.hitch(dfd, "errback"))
+                });
+                
+                return dfd;
+            },
+            tearDown: function() {
+                this._client.end();
             }
         },
         {
