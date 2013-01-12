@@ -71,8 +71,9 @@ CREATE TYPE typed_feed AS (
 
 CREATE TYPE typed_article AS (
     type news_object_type,
-    id character(256),
+    id integer,
     feed_url character varying(2048),
+    guid character(256),
     date date,
     link character varying(2048),
     author character varying(128),
@@ -207,15 +208,16 @@ CREATE FUNCTION get_articles_for_tag(feed_url varchar) RETURNS SETOF typed_artic
 $_$;
 
 CREATE FUNCTION save_article(
-    id char,
+    id integer,
     feed_url varchar,
+    guid char,
     date date,
     link char,
     author varchar,
     title text,
     summary text,
     description text,
-    deleted boolean
+    deleted boolean DEFAULT NULL
 ) RETURNS void
     LANGUAGE plpgsql
     AS $_$
@@ -223,6 +225,7 @@ CREATE FUNCTION save_article(
     IF EXISTS(SELECT 1 FROM article WHERE article.id = id) THEN
         UPDATE article SET
             article.feed_url = feed_url,
+            article.guid = guid,
             article.date = date,
             article.link = link,
             article.author = author,
@@ -232,8 +235,8 @@ CREATE FUNCTION save_article(
             article.deleted = deleted
                 WHERE article.id = id
     ELSE
-        INSERT INTO article (id, feed_url, date, link, author, title, summary, description, deleted)
-            VALUES (id, feed_url, date, link, author, title, summary, description, deleted);
+        INSERT INTO article (feed_url, guid, date, link, author, title, summary, description, deleted)
+            VALUES (feed_url, guid, date, link, author, title, summary, description, deleted);
     END;
 $_$;
 
@@ -242,8 +245,9 @@ $_$;
 --
 
 CREATE TABLE article (
-    id character(256) NOT NULL,
+    id SERIAL,
     feed_url character varying(2048) NOT NULL,
+    guid character(256),
     date date NOT NULL,
     link character varying(2048),
     author character varying(128),
