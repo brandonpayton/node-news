@@ -51,34 +51,31 @@ define([
                     return feedStore.query();
                 },
                 "POST": function(data) {
-                    var url = data.url;
-
-                    if(!url) {
+                    if(!data.url) {
                         throw new Error("No url specified for new feed");
                     }
+
+                    var feed = {
+                        url: data.url,
+                        tags: data.tags || []
+                    };
                     
-                    return feedStore.query({ key: data.url }).then(function(results) {
-                        if(results.length > 0) {
-                            throw new Error("Feed already exists.");
-                        }
+                    var asyncFeed = new Deferred(),
+                        feedPromise = null;
 
-                        var asyncFeed = new Deferred(),
-                            feedPromise = null;
-
-                        function fulfilledCallback() {
-                            if(feedPromise === null) {
-                                asyncFeed.reject(new Error("Unable to read feed information. URL doesn't appear to point to feed data."));
-                            }
+                    function fulfilledCallback() {
+                        if(feedPromise === null) {
+                            asyncFeed.reject(new Error("Unable to read feed information. URL doesn't appear to point to feed data."));
                         }
-                        function progressCallback(progress) {
-                            if(progress.type === "SavingFeed") {
-                                feedPromise = progress.promise;
-                                feedPromise.then(lang.hitch(asyncFeed, "resolve"), lang.hitch(asyncFeed, "reject"));
-                            }
+                    }
+                    function progressCallback(progress) {
+                        if(progress.type === "SavingFeed") {
+                            feedPromise = progress.promise;
+                            feedPromise.then(lang.hitch(asyncFeed, "resolve"), lang.hitch(asyncFeed, "reject"));
                         }
-                        feedUpdater.addFeed(url).then(fulfilledCallback, fulfilledCallback, progressCallback);
-                        return asyncFeed;
-                    });
+                    }
+                    feedUpdater.addFeed(feed).then(fulfilledCallback, fulfilledCallback, progressCallback);
+                    return asyncFeed;
                 }
             },
             tag: {
