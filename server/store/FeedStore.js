@@ -70,7 +70,7 @@ define([
             }
                 
             return this._postgresClient.query(
-                "SELECT save_feed(url := $1, name := $2, tags := $3);",
+                "SELECT * FROM save_feed(url := $1, name := $2, tags := $3);",
                 [ object.url, object.name, serializeTags(object.tags) ]
             );
         },
