@@ -48,14 +48,7 @@ define([
         return {
             feeds: {
                 "GET": function() {
-                    return all({
-                        tags: feedStore.getTags(),
-                        taglessFeeds: feedStore.query({ tag: "" })
-                    }).then(function(result) {
-                        var tags = result.tags;
-                        tags.push.apply(tags, result.taglessFeeds);
-                        return tags;
-                    });
+                    return feedStore.query();
                 },
                 "POST": function(data) {
                     var url = data.url;
@@ -89,8 +82,15 @@ define([
                 }
             },
             tag: {
-                "GET": function(tagName) {
-                    return feedStore.query({ tag: tagName });
+                feeds: {
+                    "GET": function(tagName) {
+                        return feedStore.query({ tag: tagName });
+                    }
+                },
+                articles: {
+                    "GET": function(tagName) {
+                        return feedStore.query
+                    }
                 }
             },
             feed: {
@@ -102,23 +102,23 @@ define([
                 },
                 "DELETE": function(feedId) {
                     return feedStore.remove(feedId);
-                }
-            },
-            articles: {
-                "GET": function(feedId) {
-                    return feedStore.getArticleStore(feedId).query();
-                }
-            },
-            article: {
-                "GET": function(feedId, articleId) {
-                    return feedStore.getArticleStore(feedId).get(articleId);
                 },
-                "PUT": function(feedId, articleId, data) {
-                    data = lang.mixin({ _id: articleId }, data);
-                    return feedStore.getArticleStore(feedId).put(data);
+                articles: {
+                    "GET": function(feedId) {
+                        return feedStore.getArticleStore(feedId).query();
+                    }
                 },
-                "DELETE": function(feedId, articleId) {
-                    return feedStore.getArticleStore(feedId).remove(articleId);
+                article: {
+                    "GET": function(feedId, articleId) {
+                        return feedStore.getArticleStore(feedId).get(articleId);
+                    },
+                    "PUT": function(feedId, articleId, data) {
+                        data = lang.mixin({ _id: articleId }, data);
+                        return feedStore.getArticleStore(feedId).put(data);
+                    },
+                    "DELETE": function(feedId, articleId) {
+                        return feedStore.getArticleStore(feedId).remove(articleId);
+                    }
                 }
             }
         };
@@ -150,41 +150,48 @@ define([
 
                 var context = null;
                 var handlerParams = [ ];
+                var handlerContext = null;
                 while(parts.length > 0) {
-                    var context = parts.shift(), contextId;
+                    var contextName = parts.shift(), contextId;
+                    handlerContext = (handlerContext || handlers)[contextName];
+
                     if(parts.length > 0) {
                         contextId = decodeURIComponent(parts.shift());
                         handlerParams.push(contextId);
                     }
                 }
 
-                var handler = handlers[context][method];
-                if(!handler) {
-                    unsupportedHttpMethod(res);
+                if(!handlerContext) {
+                    throw new Error("Unsupported API: " + dataPath);
                 } else {
-                    function completeResponse(dataPromise) {
-                        return when(dataPromise, function(data) {
-                            if(method === "GET" && data === undefined) {
-                                error(res, 404);
-                            } else {
-                                serveJson(res, data)
-                            }
-                        }, function(err) {
-                            error(res, 500, err)
-                        })
-                    }
-
-                    var result = null;
-                    if(method in { PUT: 1, POST: 1 }) {
-                        if(req.headers["content-type"] !== "application/json") {
-                            throw new Error("Content-type must be application/json");
-                        }
-                        readAllData(req).then(function(data) {
-                            handlerParams.push(JSON.parse(data));
-                            completeResponse(handler.apply(null, handlerParams));
-                        });
+                    var handler = handlerContext[method];
+                    if(!handler) {
+                        unsupportedHttpMethod(res);
                     } else {
-                        completeResponse(handler.apply(null, handlerParams));
+                        function completeResponse(dataPromise) {
+                            return when(dataPromise, function(data) {
+                                if(method === "GET" && data === undefined) {
+                                    error(res, 404);
+                                } else {
+                                    serveJson(res, data)
+                                }
+                            }, function(err) {
+                                error(res, 500, err)
+                            })
+                        }
+
+                        var result = null;
+                        if(method in { PUT: 1, POST: 1 }) {
+                            if(req.headers["content-type"] !== "application/json") {
+                                throw new Error("Content-type must be application/json");
+                            }
+                            readAllData(req).then(function(data) {
+                                handlerParams.push(JSON.parse(data));
+                                completeResponse(handler.apply(null, handlerParams));
+                            });
+                        } else {
+                            completeResponse(handler.apply(null, handlerParams));
+                        }
                     }
                 }
             } catch(err) {
