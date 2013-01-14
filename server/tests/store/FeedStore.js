@@ -3,13 +3,12 @@ define([
     'server/store/FeedStore',
 	'doh/main',
     'server/postgres',
-    'server/nodeCallback',
     'dojo/_base/lang',
     'dojo/string',
     'dojo/Deferred',
     'dojo/node!child_process',
     'dojo/text!server/data/create.sql'
-], function(require, FeedStore, doh, postgres, nodeCallback, lang, dojoString, Deferred, child_process, creationSqlTemplate) {
+], function(require, FeedStore, doh, postgres, lang, dojoString, Deferred, child_process, creationSqlTemplate) {
 
     var databaseName = "news_test_feedstore",
         creationSql = 
@@ -32,8 +31,7 @@ define([
         var sqlQuery = 
             "COPY feed (url, name) FROM '" + feedDataFileName + "' WITH csv;" +
             "COPY tag_to_feed (tag, feed_url) FROM '" + tagDataFileName + "' WITH csv;";
-        client.query(sqlQuery, nodeCallback(dfdInsert));                
-        return dfdInsert.promise;
+        return client.query(sqlQuery);                
     }
 
     var client = null;

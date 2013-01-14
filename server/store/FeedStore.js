@@ -3,9 +3,8 @@ define([
     "dojo/_base/declare",
     "dojo/Deferred",
     "dojo/store/util/QueryResults",
-    "./ArticleStore",
-    "../nodeCallback"
-], function(lang, declare, Deferred, QueryResults, ArticleStore, nodeCallback) {
+    "./ArticleStore"
+], function(lang, declare, Deferred, QueryResults, ArticleStore) {
 
     function serializeTags(tags) {
         if(tags) {
@@ -42,13 +41,11 @@ define([
         },
 
         get: function(id) {
-            var dfdGet = new Deferred();
-            this._postgresClient.query(
+            var resultPromise = this._postgresClient.query(
                 "SELECT * FROM get_feed(url := $1);",
-                [ id ],
-                nodeCallback(dfdGet)
+                [ id ]
             );
-            return dfdGet.then(function(result) {
+            return resultPromise.then(function(result) {
                 var rows = result.rows;
                 if(rows.length === 1) {
                     return rowToFeed(rows[0]);
@@ -62,7 +59,7 @@ define([
 
         // OPP: Update dojo/store docs to cover a resolve/return convention for add() and put().
         add: function(object, options) {
-            return this.put(object, options);
+            return this.put(lang.mixin({ type: "feed" }, object), options);
         },
 
         // TODO: Validate tags and limit them to the typical set of identifier characters.
@@ -72,43 +69,35 @@ define([
                 throw new Exception("Only objects with type === 'feed' can be placed in the store.");
             }
                 
-            var dfdPut = new Deferred();
-            this._postgresClient.query(
+            return this._postgresClient.query(
                 "SELECT save_feed(url := $1, name := $2, tags := $3);",
-                [ object.url, object.name, serializeTags(object.tags) ],
-                nodeCallback(dfdPut)
+                [ object.url, object.name, serializeTags(object.tags) ]
             );
-            return dfdPut.promise;
         },
 
         remove: function(id) {
-            var dfdRemove = new Deferred();
-            this._postgresClient.query(
+            return this._postgresClient.query(
                 "SELECT soft_delete_feed(url := $1);",
-                [ id ],
-                nodeCallback(dfdRemove)
+                [ id ]
             );
-            return dfdRemove.promise;
         },
 
         query: function(query, options) {
             query = query || {};
             
-            var asyncResults = new Deferred();
+            var resultPromise;
             if(query.tag !== undefined) {
-                this._postgresClient.query(
+                resultPromise = this._postgresClient.query(
                     "SELECT * FROM get_feeds_with_tag(tag := $1);",
-                    [ query.tag ],
-                    nodeCallback(asyncResults)
+                    [ query.tag ]
                 );
             } else {
-                this._postgresClient.query(
-                    "SELECT * FROM get_tags_and_tagless_feeds();",
-                    nodeCallback(asyncResults)
+                resultPromise = this._postgresClient.query(
+                    "SELECT * FROM get_tags_and_tagless_feeds();"
                 );
             }
 
-            return QueryResults(asyncResults.then(function(result) {
+            return QueryResults(resultPromise.then(function(result) {
                 var q = query;
                 return result.rows.map(function(row) {
                     if(row.type === "tag") {
@@ -127,6 +116,16 @@ define([
 
         getArticleStore: function(feedId) {
             return new ArticleStore(this._postgresClient, feedId);
+        },
+
+        getArticlesForTag: function(tag) {
+            var articlesPromise = this._postgresClient.query(
+                "SELECT * FROM get_articles_by_tag(tag := $1);",
+                [ query.tag ],
+                nodeCallback(dfdResults)
+            ).then(function(results) {
+                return results.rows.map(ArticleStore.rowToArticle);
+            });
         },
 
         getIdentity: function(object) {
