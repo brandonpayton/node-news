@@ -215,21 +215,21 @@ CREATE FUNCTION save_feed(url character varying, name character varying, tags ch
     LANGUAGE plpgsql
     AS $_$
     BEGIN
+        -- TODO: Add ROLLBACK on error
 
         -- Removing all and readding tags for simplicity.
-        DELETE FROM tag_to_feed WHERE url = $1;
+        DELETE FROM tag_to_feed WHERE tag_to_feed.feed_url = url;
         INSERT INTO tag_to_feed (tag, feed_url)
-            SELECT *, $1 FROM (SELECT unnest($3)) AS tags;
+            SELECT *, $1 FROM (SELECT unnest(tags)) AS tags;
 
-        -- TODO: Add the ability to ROLLBACk
-        IF EXISTS(SELECT 1 FROM feed WHERE feed.url = $1) THEN
+        IF EXISTS(SELECT 1 FROM feed WHERE feed.url = save_feed.url) THEN
             RETURN QUERY
-            UPDATE feed SET name = $2 WHERE feed.url = $1
-                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := url) AS tags;
+            UPDATE feed SET name = $2 WHERE feed.url = url 
+                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := feed.url)::varchar(128)[] AS tags;
         ELSE
             RETURN QUERY
             INSERT INTO feed (url, name) VALUES ($1, $2)
-                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := url) AS tags;
+                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := feed.url)::varchar(128)[] AS tags;
         END IF;
     END;
 $_$;
