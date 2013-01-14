@@ -72,7 +72,8 @@ define([
             .on("meta", function(metadata) {
                 feedSavePromise = feedStore.add({
                     url: url,
-                    name: metadata.title
+                    name: metadata.title,
+                    tags: []
                 });
 
                 asyncJob.progress({
