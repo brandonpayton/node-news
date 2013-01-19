@@ -43,8 +43,7 @@ CREATE TABLE news.article (
     author text,
     title text,
     summary text,
-    description text,
-    deleted boolean DEFAULT false NOT NULL
+    description text
 );
 
 /*
@@ -69,21 +68,29 @@ ALTER TABLE ONLY news.article
     ADD CONSTRAINT article_guid_uniqueness UNIQUE (feed_url, guid);
 
 /*
- * FUNCTIONs and VIEWs
+ * VIEWs
  */
 
--- TODO: Create feed_tags view if its possible order the aggregation of the tags array.
-CREATE FUNCTION news.get_feed_tags(url text) RETURNS text[]
-LANGUAGE sql
-AS $$
-    SELECT array_agg(tag) AS tags FROM news.tag_to_feed WHERE feed_url = url;
-$$;
+CREATE VIEW news.feed_tags AS
+    SELECT feed_url, array_agg(tag ORDER BY tag) AS tags FROM news.tag_to_feed GROUP BY feed_url;
 
 CREATE VIEW news.typed_feed AS
-    SELECT 'feed'::text AS type, *, news.get_feed_tags(news.feed.url) AS tags FROM news.feed;
+    SELECT 'feed'::text AS type, news.feed.*, news.feed_tags.tags
+        FROM news.feed LEFT OUTER JOIN news.feed_tags ON news.feed.url = news.feed_tags.feed_url;
 
 CREATE VIEW news.typed_article AS
-    SELECT 'article'::text, * FROM news.article;
+    SELECT 'article'::text AS type, * FROM news.article;
+
+CREATE VIEW news.tags_and_tagless_feeds AS
+    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed GROUP BY tag
+    UNION ALL
+    SELECT * FROM news.typed_feed
+        WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
+        ORDER BY type DESC, name;
+
+/*
+ * FUNCTIONs
+ */
 
 CREATE FUNCTION news.get_feed(url text) RETURNS news.typed_feed
 LANGUAGE sql
@@ -99,28 +106,16 @@ AS $$
         ORDER BY name;
 $$;
 
-CREATE VIEW news.tags_and_tagless_feeds AS
-    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed GROUP BY tag
-    UNION ALL
-    SELECT * FROM news.typed_feed
-        WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
-        ORDER BY type DESC, name;
-
 CREATE FUNCTION news.get_tags_and_tagless_feeds() RETURNS SETOF news.tags_and_tagless_feeds
 LANGUAGE sql
 AS $$
     SELECT * FROM news.tags_and_tagless_feeds;
 $$;
 
-CREATE FUNCTION news.save_feed(url text, name text, tags text[]) RETURNS SETOF text
+CREATE FUNCTION news.save_feed(url text, name text, tags text[]) RETURNS SETOF news.feed.url%TYPE
 LANGUAGE plpgsql
 AS $$
     BEGIN
-        -- Removing all and readding tags for simplicity.
-        DELETE FROM news.tag_to_feed WHERE feed_url = url;
-        INSERT INTO news.tag_to_feed (tag, feed_url)
-            SELECT *, url FROM (SELECT unnest(tags)) AS tags;
-
         IF EXISTS(SELECT 1 FROM news.feed WHERE feed.url = save_feed.url) THEN
             RETURN QUERY
             UPDATE news.feed SET name = $2 WHERE feed.url = url 
@@ -130,6 +125,11 @@ AS $$
             INSERT INTO news.feed (url, name) VALUES ($1, $2)
                 RETURNING news.feed.url;
         END IF;
+
+        -- Removing all and readding tags for simplicity.
+        DELETE FROM news.tag_to_feed WHERE feed_url = url;
+        INSERT INTO news.tag_to_feed (tag, feed_url)
+            SELECT *, url FROM (SELECT unnest(tags)) AS tags;
     END;
 $$;
 
@@ -146,13 +146,7 @@ AS $$
     SELECT * FROM news.typed_article WHERE id = $1;
 $$;
 
-CREATE FUNCTION news.soft_delete_article(id integer) RETURNS void
-LANGUAGE sql
-AS $$
-    UPDATE news.article SET deleted = TRUE WHERE id = $1;
-$$;
-
-CREATE FUNCTION news.get_articles_for_feed(feed_url varchar) RETURNS SETOF news.typed_article
+CREATE FUNCTION news.get_articles_for_feed(feed_url text) RETURNS SETOF news.typed_article
 LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_article
@@ -160,7 +154,7 @@ AS $$
         ORDER BY date;
 $$;
 
-CREATE FUNCTION news.get_articles_for_tag(feed_url varchar) RETURNS SETOF news.typed_article
+CREATE FUNCTION news.get_articles_for_tag(tag text) RETURNS SETOF news.typed_article
 LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_article 
@@ -169,38 +163,36 @@ AS $$
 $$;
 
 CREATE FUNCTION news.save_article(
-    id integer,
-    feed_url varchar,
-    guid char,
+    feed_url text,
+    guid text,
     date timestamp,
-    link char,
-    author varchar,
+    link text,
+    author text,
     title text,
     summary text,
     description text,
-    deleted boolean DEFAULT NULL
-) RETURNS SETOF integer
+    id integer DEFAULT NULL
+) RETURNS SETOF news.article.id%TYPE
 LANGUAGE plpgsql
 AS $$
     BEGIN
-        IF EXISTS(SELECT 1 FROM article WHERE article.id = id) THEN
+        IF EXISTS(SELECT 1 FROM news.article WHERE article.id = save_article.id) THEN
             RETURN QUERY
             UPDATE news.article SET
-                article.feed_url = feed_url,
-                article.guid = guid,
-                article.date = date,
-                article.link = link,
-                article.author = author,
-                article.title = title,
-                article.summary = summary,
-                article.description = description,
-                article.deleted = deleted
-                    WHERE article.id = id
+                feed_url = save_article.feed_url,
+                guid = save_article.guid,
+                date = save_article.date,
+                link = save_article.link,
+                author = save_article.author,
+                title = save_article.title,
+                summary = save_article.summary,
+                description = save_article.description
+                    WHERE article.id = save_article.id
                 RETURNING article.id;
         ELSE
             RETURN QUERY
-            INSERT INTO news.article (feed_url, guid, date, link, author, title, summary, description, deleted)
-                VALUES (feed_url, guid, date, link, author, title, summary, description, deleted)
+            INSERT INTO news.article (feed_url, guid, date, link, author, title, summary, description)
+                VALUES (feed_url, guid, date, link, author, title, summary, description)
                 RETURNING article.id;
         END IF;
     END;
