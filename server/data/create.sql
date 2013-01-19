@@ -87,17 +87,17 @@ CREATE VIEW news.typed_article AS
 
 CREATE FUNCTION news.get_feed(url text) RETURNS news.typed_feed
 LANGUAGE sql
-AS $_$
+AS $$
     SELECT * FROM news.typed_feed WHERE url = $1;
-$_$;
+$$;
 
 CREATE FUNCTION news.get_feeds_with_tag(tag text) RETURNS SETOF news.typed_feed
 LANGUAGE sql
-AS $_$
+AS $$
     SELECT * FROM news.typed_feed
         WHERE url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1) AND NOT deleted
         ORDER BY name;
-$_$;
+$$;
 
 CREATE VIEW news.tags_and_tagless_feeds AS
     SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed GROUP BY tag
@@ -114,7 +114,7 @@ $$;
 
 CREATE FUNCTION news.save_feed(url text, name text, tags text[]) RETURNS SETOF text
 LANGUAGE plpgsql
-AS $_$
+AS $$
     BEGIN
         -- Removing all and readding tags for simplicity.
         DELETE FROM news.tag_to_feed WHERE feed_url = url;
@@ -131,42 +131,42 @@ AS $_$
                 RETURNING news.feed.url;
         END IF;
     END;
-$_$;
+$$;
 
 CREATE FUNCTION news.soft_delete_feed(url text) RETURNS void
 LANGUAGE sql
-AS $_$
+AS $$
     UPDATE news.feed SET deleted = TRUE WHERE url = $1;
-$_$;
+$$;
 
 
 CREATE FUNCTION news.get_article(id integer) RETURNS news.typed_article
 LANGUAGE sql
-AS $_$
+AS $$
     SELECT * FROM news.typed_article WHERE id = $1;
-$_$;
+$$;
 
 CREATE FUNCTION news.soft_delete_article(id integer) RETURNS void
 LANGUAGE sql
-AS $_$
+AS $$
     UPDATE news.article SET deleted = TRUE WHERE id = $1;
-$_$;
+$$;
 
 CREATE FUNCTION news.get_articles_for_feed(feed_url varchar) RETURNS SETOF news.typed_article
 LANGUAGE sql
-AS $_$
+AS $$
     SELECT * FROM news.typed_article
         WHERE feed_url = $1
         ORDER BY date;
-$_$;
+$$;
 
 CREATE FUNCTION news.get_articles_for_tag(feed_url varchar) RETURNS SETOF news.typed_article
 LANGUAGE sql
-AS $_$
+AS $$
     SELECT * FROM news.typed_article 
         WHERE feed_url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1)
         ORDER BY date;
-$_$;
+$$;
 
 CREATE FUNCTION news.save_article(
     id integer,
@@ -181,7 +181,7 @@ CREATE FUNCTION news.save_article(
     deleted boolean DEFAULT NULL
 ) RETURNS SETOF integer
 LANGUAGE plpgsql
-AS $_$
+AS $$
     BEGIN
         IF EXISTS(SELECT 1 FROM article WHERE article.id = id) THEN
             RETURN QUERY
@@ -204,7 +204,7 @@ AS $_$
                 RETURNING article.id;
         END IF;
     END;
-$_$;
+$$;
 
 /*
  * VIEWs
