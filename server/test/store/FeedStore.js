@@ -11,9 +11,7 @@ define([
 ], function(require, FeedStore, doh, postgres, lang, dojoString, Deferred, child_process, creationSqlTemplate) {
 
     var databaseName = "news_test_feedstore",
-        creationSql = 
-            "DROP DATABASE " + databaseName + ";\n" +
-            dojoString.substitute(creationSqlTemplate, { database_name: databaseName }),
+        creationSql = dojoString.substitute(creationSqlTemplate, { database_name: databaseName }),
         feeds,
         feedsByTag;
 
@@ -24,8 +22,7 @@ define([
         return postgres.createClient("tcp://localhost/" + databaseName);
     }
     function insertTestData() {
-        var dfdInsert = new Deferred(),
-            feedDataFileName = require.toUrl("./feedData.csv"),
+        var feedDataFileName = require.toUrl("./feedData.csv"),
             tagDataFileName = require.toUrl("./tagData.csv");
 
         var sqlQuery = 
