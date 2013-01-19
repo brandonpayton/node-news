@@ -1,12 +1,6 @@
---
--- PostgreSQL database dump
---
+\set ON_ERROR_STOP on
 
-SET statement_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
 SET check_function_bodies = true;
-SET client_min_messages = warning;
 
 --
 -- Name: ${database_name}; Type: DATABASE; Schema: -; Owner: -
@@ -23,258 +17,158 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = true;
 SET client_min_messages = warning;
 
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
 
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+CREATE SCHEMA news;
 
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
-SET search_path = public, pg_catalog;
-
---
--- Name: news_object_type; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE news_object_type AS ENUM (
-    'feed',
-    'tag',
-    'article'
-);
-
-
---
--- Name: feed_or_tag; Type: TYPE; Schema: public; Owner: -
---
-
-CREATE TYPE feed_or_tag AS (
-	type news_object_type,
-	name character varying(256),
-	url character varying(2048),
-	tags character varying(128)[]
-);
-
-CREATE TYPE typed_feed AS (
-	type news_object_type,
-	name character varying(256),
-	url character varying(2048),
-    deleted boolean,
-	tags character varying(128)[]
-);
-
-CREATE TYPE typed_article AS (
-    type news_object_type,
-    id integer,
-    feed_url character varying(2048),
-    guid character(256),
-    date timestamp,
-    link character varying(2048),
-    author character varying(128),
-    title text,
-    summary text,
-    description text,
-    deleted boolean
-);
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
---
--- Name: feed; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE feed (
-    name character varying(256) NOT NULL,
-    url character varying(2048) NOT NULL,
+/*
+ * TABLEs
+ */
+CREATE TABLE news.feed (
+    name text NOT NULL,
+    url text NOT NULL,
     deleted boolean DEFAULT FALSE
 );
 
---
--- Name: article; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
+CREATE TABLE news.tag_to_feed (
+    tag text NOT NULL,
+    feed_url text NOT NULL
+);
 
-CREATE TABLE article (
+CREATE TABLE news.article (
     id SERIAL,
-    feed_url character varying(2048) NOT NULL,
-    guid character(256),
+    feed_url text NOT NULL,
+    guid text,
     date timestamp NOT NULL,
-    link character varying(2048),
-    author character varying(128),
+    link text,
+    author text,
     title text,
     summary text,
     description text,
     deleted boolean DEFAULT false NOT NULL
 );
 
-
---
--- Name: tag_to_feed; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE tag_to_feed (
-    tag character varying(128) NOT NULL,
-    feed_url character varying(2048) NOT NULL
-);
-
-
---
--- Name: article_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY article
-    ADD CONSTRAINT article_pkey PRIMARY KEY (id);
-
-
---
--- Name: feed_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY feed
+/*
+ * CONSTRAINTs
+ */
+ALTER TABLE ONLY news.feed
     ADD CONSTRAINT feed_pkey PRIMARY KEY (url);
 
-
---
--- Name: tag_to_feed_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
---
-
-ALTER TABLE ONLY tag_to_feed
+ALTER TABLE ONLY news.tag_to_feed
     ADD CONSTRAINT tag_to_feed_pkey PRIMARY KEY (tag, feed_url);
 
+ALTER TABLE ONLY news.tag_to_feed
+    ADD CONSTRAINT tag_to_feed_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES news.feed(url);
 
---
--- Name: article_feed_url_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
+ALTER TABLE ONLY news.article
+    ADD CONSTRAINT article_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY article
-    ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES feed(url);
+ALTER TABLE ONLY news.article
+    ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES news.feed(url);
 
-ALTER TABLE ONLY article
+ALTER TABLE ONLY news.article
     ADD CONSTRAINT article_guid_uniqueness UNIQUE (feed_url, guid);
 
+/*
+ * FUNCTIONs
+ */
 
---
--- Name: get_feed(character varying); Type: FUNCTION; Schema: public; Owner: -
---
+-- TODO: Create feed_tags view if its possible order the aggregation of the tags array.
+CREATE FUNCTION news.get_feed_tags(url text) RETURNS text[]
+LANGUAGE sql
+AS $$
+    SELECT array_agg(tag) AS tags FROM news.tag_to_feed WHERE feed_url = url;
+$$;
 
-CREATE FUNCTION get_feed_tags(url varchar(2048)) RETURNS varchar(128)[]
-    LANGUAGE sql
-    AS $_$
-    SELECT array_agg(tag) FROM tag_to_feed WHERE feed_url = $1;
+CREATE VIEW news.typed_feed AS
+    SELECT 'feed'::text AS type, *, news.get_feed_tags(news.feed.url) AS tags FROM news.feed;
+
+CREATE VIEW news.typed_article AS
+    SELECT 'article'::text, * FROM news.article;
+
+CREATE FUNCTION news.get_feed(url text) RETURNS news.typed_feed
+LANGUAGE sql
+AS $_$
+    SELECT * FROM news.typed_feed WHERE url = $1;
 $_$;
 
-CREATE FUNCTION get_feed(url character varying(2048))
-RETURNS typed_feed
-    LANGUAGE sql
-    AS $_$
-    SELECT 'feed'::news_object_type, feed.name, feed.url, feed.deleted, get_feed_tags($1) FROM feed WHERE feed.url = $1;
-$_$;
-
---
--- Name: get_feeds_with_tag(character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION get_feeds_with_tag(tag character varying) RETURNS SETOF feed_or_tag
-    LANGUAGE sql
-    AS $_$
-    SELECT 'feed'::news_object_type AS type, feed.name AS name, feed.url AS url, get_feed_tags(url := url) AS tags
-        FROM feed
-        WHERE url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1) AND NOT deleted
+CREATE FUNCTION news.get_feeds_with_tag(tag text) RETURNS SETOF news.typed_feed
+LANGUAGE sql
+AS $_$
+    SELECT * FROM news.typed_feed
+        WHERE url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1) AND NOT deleted
         ORDER BY name;
 $_$;
 
-
---
--- Name: get_tags_and_tagless_feeds(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION get_tags_and_tagless_feeds() RETURNS SETOF feed_or_tag
-    LANGUAGE sql
-    AS $$
-    SELECT 'tag'::news_object_type AS type, tag AS name, NULL AS url, NULL AS tags FROM tag_to_feed GROUP BY tag
+CREATE VIEW news.tags_and_tagless_feeds AS
+    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed GROUP BY tag
     UNION ALL
-    SELECT 'feed'::news_object_type AS type, name, url, get_feed_tags(url := url) AS tags
-        FROM feed
-        WHERE url NOT IN (SELECT feed_url FROM tag_to_feed) AND NOT deleted
-    ORDER BY type DESC, name;
+    SELECT * FROM news.typed_feed
+        WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
+        ORDER BY type DESC, name;
+
+CREATE FUNCTION news.get_tags_and_tagless_feeds() RETURNS SETOF news.tags_and_tagless_feeds
+LANGUAGE sql
+AS $$
+    SELECT * FROM news.tags_and_tagless_feeds;
 $$;
 
-
---
--- Name: save_feed(character varying, character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION save_feed(url character varying, name character varying, tags character varying[]) RETURNS SETOF typed_feed
-    LANGUAGE plpgsql
-    AS $_$
+CREATE FUNCTION news.save_feed(url text, name text, tags text[]) RETURNS SETOF text
+LANGUAGE plpgsql
+AS $_$
     BEGIN
-        -- TODO: Add ROLLBACK on error
-
         -- Removing all and readding tags for simplicity.
-        DELETE FROM tag_to_feed WHERE tag_to_feed.feed_url = url;
-        INSERT INTO tag_to_feed (tag, feed_url)
-            SELECT *, $1 FROM (SELECT unnest(tags)) AS tags;
+        DELETE FROM news.tag_to_feed WHERE feed_url = url;
+        INSERT INTO news.tag_to_feed (tag, feed_url)
+            SELECT *, url FROM (SELECT unnest(tags)) AS tags;
 
-        IF EXISTS(SELECT 1 FROM feed WHERE feed.url = save_feed.url) THEN
+        IF EXISTS(SELECT 1 FROM news.feed WHERE feed.url = save_feed.url) THEN
             RETURN QUERY
-            UPDATE feed SET name = $2 WHERE feed.url = url 
-                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := feed.url)::varchar(128)[] AS tags;
+            UPDATE news.feed SET name = $2 WHERE feed.url = url 
+                RETURNING news.feed.url;
         ELSE
             RETURN QUERY
-            INSERT INTO feed (url, name) VALUES ($1, $2)
-                RETURNING 'feed'::news_object_type AS type, *, get_feed_tags(url := feed.url)::varchar(128)[] AS tags;
+            INSERT INTO news.feed (url, name) VALUES ($1, $2)
+                RETURNING news.feed.url;
         END IF;
     END;
 $_$;
 
-
---
--- Name: soft_delete_feed(character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION soft_delete_feed(url character varying) RETURNS void
-    LANGUAGE sql
-    AS $_$
-    UPDATE feed SET deleted = TRUE WHERE url = $1;
+CREATE FUNCTION news.soft_delete_feed(url text) RETURNS void
+LANGUAGE sql
+AS $_$
+    UPDATE news.feed SET deleted = TRUE WHERE url = $1;
 $_$;
 
 
-CREATE FUNCTION get_article(id integer) RETURNS typed_article
-    LANGUAGE sql
-    AS $_$
-    SELECT 'article'::news_object_type, * FROM article WHERE id = $1;
+CREATE FUNCTION news.get_article(id integer) RETURNS news.typed_article
+LANGUAGE sql
+AS $_$
+    SELECT * FROM news.typed_article WHERE id = $1;
 $_$;
 
-CREATE FUNCTION soft_delete_article(id integer) RETURNS void
-    LANGUAGE sql
-    AS $_$
-    UPDATE article SET deleted = TRUE WHERE id = $1;
+CREATE FUNCTION news.soft_delete_article(id integer) RETURNS void
+LANGUAGE sql
+AS $_$
+    UPDATE news.article SET deleted = TRUE WHERE id = $1;
 $_$;
 
-CREATE FUNCTION get_articles_for_feed(feed_url varchar) RETURNS SETOF typed_article
-    LANGUAGE sql
-    AS $_$
-    SELECT 'article'::news_object_type, * FROM article
+CREATE FUNCTION news.get_articles_for_feed(feed_url varchar) RETURNS SETOF news.typed_article
+LANGUAGE sql
+AS $_$
+    SELECT * FROM news.typed_article
         WHERE feed_url = $1
         ORDER BY date;
 $_$;
 
-CREATE FUNCTION get_articles_for_tag(feed_url varchar) RETURNS SETOF typed_article
-    LANGUAGE sql
-    AS $_$
-    SELECT 'article'::news_object_type, * FROM article 
-        WHERE feed_url in (SELECT feed_url FROM tag_to_feed WHERE tag = $1)
+CREATE FUNCTION news.get_articles_for_tag(feed_url varchar) RETURNS SETOF news.typed_article
+LANGUAGE sql
+AS $_$
+    SELECT * FROM news.typed_article 
+        WHERE feed_url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1)
         ORDER BY date;
 $_$;
 
-CREATE FUNCTION save_article(
+CREATE FUNCTION news.save_article(
     id integer,
     feed_url varchar,
     guid char,
@@ -285,13 +179,13 @@ CREATE FUNCTION save_article(
     summary text,
     description text,
     deleted boolean DEFAULT NULL
-) RETURNS SETOF typed_article
-    LANGUAGE plpgsql
-    AS $_$
+) RETURNS SETOF integer
+LANGUAGE plpgsql
+AS $_$
     BEGIN
         IF EXISTS(SELECT 1 FROM article WHERE article.id = id) THEN
             RETURN QUERY
-            UPDATE article SET
+            UPDATE news.article SET
                 article.feed_url = feed_url,
                 article.guid = guid,
                 article.date = date,
@@ -302,17 +196,17 @@ CREATE FUNCTION save_article(
                 article.description = description,
                 article.deleted = deleted
                     WHERE article.id = id
-                RETURNING 'article'::news_object_type AS type, *;
+                RETURNING article.id;
         ELSE
             RETURN QUERY
-            INSERT INTO article (feed_url, guid, date, link, author, title, summary, description, deleted)
+            INSERT INTO news.article (feed_url, guid, date, link, author, title, summary, description, deleted)
                 VALUES (feed_url, guid, date, link, author, title, summary, description, deleted)
-                RETURNING 'article'::news_object_type AS type, *;
+                RETURNING article.id;
         END IF;
     END;
 $_$;
 
---
--- PostgreSQL database dump complete
---
+/*
+ * VIEWs
+ */
 
