@@ -69,7 +69,7 @@ ALTER TABLE ONLY news.article
     ADD CONSTRAINT article_guid_uniqueness UNIQUE (feed_url, guid);
 
 /*
- * FUNCTIONs
+ * FUNCTIONs and VIEWs
  */
 
 -- TODO: Create feed_tags view if its possible order the aggregation of the tags array.
@@ -205,8 +205,3 @@ AS $$
         END IF;
     END;
 $$;
-
-/*
- * VIEWs
- */
-
