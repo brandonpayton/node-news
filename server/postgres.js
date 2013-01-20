@@ -22,39 +22,6 @@ define([
             });
 
             return dfdConnection.promise;
-        },
-        runPsqlScript: function(scriptStr) {
-            // TODO: Test this ON_ERROR_STOP
-            scriptStr = "\\set ON_ERROR_STOP TRUE;\n" + scriptStr;
-
-            var psql = spawn("psql");
-
-            var dfdCompletion = new Deferred();
-            psql.stdout.on('data', function (data) {
-                dfdCompletion.progress({
-                    type: "stdout",
-                    data: data
-                });
-            });
-
-            psql.stderr.on('data', function (data) {
-                dfdCompletion.progress({
-                    type: "stderr",
-                    data: data
-                });
-            });
-
-            psql.on('exit', function (code) {
-                if(code === 0) {
-                    dfdCompletion.resolve();
-                } else {
-                    dfdCompletion.reject(new Error("psql exited with unsuccessful exit code: " + code));
-                }
-            });
-
-            psql.stdin.end(scriptStr);
-
-            return dfdCompletion.promise;
         }
     };
 })

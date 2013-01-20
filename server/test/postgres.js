@@ -37,7 +37,6 @@ define([
                     self._client = client;
                     client.query("SELECT 123 AS value;").then(dfd.getTestCallback(function(result) {
                         t.assertEqual(1, result.rows.length);
-                        debugger;
                         t.assertEqual(123, result.rows[0].value);
                     }), lang.hitch(dfd, "errback"))
                 });
@@ -46,25 +45,6 @@ define([
             },
             tearDown: function() {
                 this._client.end();
-            }
-        },
-        {
-            name: "runPsqlScript",
-            timeout: 3000,
-            runTest: function runPsqlScript(t) {
-                var databaseName = "news_test_postgres";
-                var testCommands =
-                    "DROP DATABASE " + databaseName + ";\n" +
-                    dojoString.substitute(creationSql, { database_name: databaseName });
-
-                var dfd = new doh.Deferred();
-                postgres.runPsqlScript(testCommands).then(
-                    dfd.getTestCallback(function() {
-                        // Do nothing.
-                    }),
-                    lang.hitch(dfd, "errback")
-                );
-                return dfd;
             }
         }
     ]);
