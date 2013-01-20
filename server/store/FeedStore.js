@@ -42,7 +42,7 @@ define([
 
         get: function(id) {
             var resultPromise = this._postgresClient.query(
-                "SELECT * FROM get_feed(url := $1);",
+                "SELECT * FROM news.get_feed(url := $1);",
                 [ id ]
             );
             return resultPromise.then(function(result) {
@@ -70,14 +70,14 @@ define([
             }
                 
             return this._postgresClient.query(
-                "SELECT * FROM save_feed(url := $1, name := $2, tags := $3);",
+                "SELECT * FROM news.save_feed(url := $1, name := $2, tags := $3);",
                 [ object.url, object.name, serializeTags(object.tags) ]
             );
         },
 
         remove: function(id) {
             return this._postgresClient.query(
-                "SELECT soft_delete_feed(url := $1);",
+                "SELECT news.soft_delete_feed(url := $1);",
                 [ id ]
             );
         },
@@ -88,12 +88,12 @@ define([
             var resultPromise;
             if(query.tag !== undefined) {
                 resultPromise = this._postgresClient.query(
-                    "SELECT * FROM get_feeds_with_tag(tag := $1);",
+                    "SELECT * FROM news.get_feeds_with_tag(tag := $1);",
                     [ query.tag ]
                 );
             } else {
                 resultPromise = this._postgresClient.query(
-                    "SELECT * FROM get_tags_and_tagless_feeds();"
+                    "SELECT * FROM news.get_tags_and_tagless_feeds();"
                 );
             }
 
@@ -120,7 +120,7 @@ define([
 
         getArticlesForTag: function(tag) {
             var articlesPromise = this._postgresClient.query(
-                "SELECT * FROM get_articles_by_tag(tag := $1);",
+                "SELECT * FROM news.get_articles_by_tag(tag := $1);",
                 [ query.tag ],
                 nodeCallback(dfdResults)
             ).then(function(results) {

@@ -62,14 +62,14 @@ define([
                 paramValues.push(paramValue);
             });
             return this._postgresClient.query(
-                "SELECT save_article(" + paramSpecs.join(",") + ")",
+                "SELECT news.save_article(" + paramSpecs.join(",") + ")",
                 paramValues
             );
         },
 
         get: function(id) {
             var resultPromise = this._postgresClient.query(
-                "SELECT * FROM get_article(id := $1);",
+                "SELECT * FROM news.get_article(id := $1);",
                 [ id ]
             );
             return resultPromise.then(function(result) {
@@ -86,7 +86,7 @@ define([
 
         query: function() {
             var resultPromise = this._postgresClient.query(
-                "SELECT * FROM get_articles_by_feed(url := $1);",
+                "SELECT * FROM news.get_articles_by_feed(url := $1);",
                 [ this._feedUrl ]
             );
 
