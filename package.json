@@ -19,7 +19,7 @@
     "feedparser": "0.10.x",
     "send": "0.0.4",
     "pg": "0.10.x",
-    "guid": "0.0.x"
+    "node-mocks-http": "0.0.8"
   },
   "devDependencies": {},
   "optionalDependencies": {},

@@ -2,8 +2,9 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/Deferred",
+    "dojo/promise/all",
     "dojo/node!feedparser"
-], function(declare, lang, Deferred, feedparser) {
+], function(declare, lang, Deferred, all, feedparser) {
     return declare(null, {
         _feedStore: null,
         _queuedFeeds: [],
@@ -19,14 +20,14 @@ define([
         _nextUpdateIfPossible: function() {
             if(this._queuedFeeds.length > 0 && this._inProgressCount < this._windowSize) {
                 var feed = this._queuedFeeds.shift();
-                var async = this.updateFeed(feed);
+                var promiseToUpdate = this.updateFeed(feed);
                 this._inProgressCount += 1;
                 
                 var after = lang.hitch(this, function() {
                     this._inProgressCount -= 1;
                     this._nextUpdateIfPossible();
                 });
-                async.then(after, after);
+                promiseToUpdate.then(after, after);
             }
         },
 
@@ -36,74 +37,73 @@ define([
         },
 
         updateFeed: function(feed) {
-            var asyncJob = new Deferred(),
+            var dfdUpdate = new Deferred(),
                 feedStore = this._feedStore,
-                meta = null;
+                articleStore = feedStore.getArticleStore(feed.url),
+                articleSavePromises = [];
 
             // TODO: Handle "error" event if there is one and create aggregate error notification article for this feed.
-            feedparser.parseUrl(feed._id)
+            feedparser.parseUrl(feed.url)
             .on("article", function(article) {
-                var articleStore = feedStore.getArticleStore(feed._id);
-                var articleId = articleStore.getIdentity(article);
-                asyncJob.progress({
-                    type: "SavingArticle",
-                    promise: articleStore.get(articleId).then(function(doc) {
-                        if(doc === undefined) {
+                // TODO: Consider whether feedUrl + guid should be key instead of separate id property.
+                var articleQuery = {
+                    feedUrl: feed.url,
+                    guid: article.guid
+                };
+
+                articleSavePromises.push(
+                    articleStore.query(articleQuery).then(function(results) {
+                        if(results.length === 0) {
                             return articleStore.add(article);
                         }
                     })
-                });
+                );
             })
-            .on("end", lang.hitch(asyncJob, "resolve"));
+            .on("end", function() {
+                var resolve = lang.hitch(dfdUpdate, "resolve");
+                all(articleSavePromises, resolve, resolve);
+            });
 
-            return asyncJob;
+            return dfdUpdate.promise;
         },
 
-        addFeed: function(url) {
-            var asyncJob = new Deferred(),
+        addFeed: function(feed) {
+            var dfdSaveFeed = new Deferred(),
                 feedStore = this._feedStore,
-                feedSavePromise = null;
+                feedSavePromise = null,
+                url = feed.url,
+                tags = feed.tags;
 
             feedparser.parseUrl(url)
             // TODO: Does 'error' signal the end of parsing or may feedparser encounter an error and continue?
             .on("error", function(error) {
-                asyncJob.reject(error);
+                if(feedSavePromise === null) {
+                    dfdSaveFeed.reject(error);
+                }
             })
             .on("meta", function(metadata) {
-                feedSavePromise = feedStore.add({
-                    url: url,
-                    name: metadata.title,
-                    tags: []
-                });
-
-                asyncJob.progress({
-                    type: "SavingFeed",
-                    promise: feedSavePromise
-                });
-            })
-            .on("article", function(article) {
-                var articleStore = feedStore.getArticleStore(url);
-                var articleId = articleStore.getIdentity(article);
-                asyncJob.progress({
-                    type: "SavingArticle",
-                    promise: articleStore.get(articleId).then(function(doc) {
-                        if(doc === undefined) {
-                            // This article has not yet been added.
-                            return articleStore.add(article);
-                        }
-                    })
-                });
+                if(!dfdSaveFeed.isFulfilled()) {
+                    var feed = {
+                        url: url,
+                        name: metadata.title,
+                        tags: tags
+                    };
+                    feedSavePromise = feedStore.add(feed);
+                    feedSavePromise.then(function(feedResult) {
+                        function resolve() { dfdSaveFeed.resolve(feedResult); }
+                        return feedUpdater.updateFeed(feed).then(resolve, resolve);
+                    }, function(err) {
+                        dfdSaveFeed.reject(err);
+                    });
+                }
             })
             .on("end", function() {
-                if(feedSavePromise === null) {
-                    asyncJob.reject(new Error("Unable to find or save feed metadata."));
-                } else {
-                    feedSavePromise.then(lang.hitch(asyncJob, "resolve"), lang.hitch(asyncJob, "reject"));
+                if(!dfdSaveFeed.isFulfilled() && feedSavePromise === null) {
+                    dfdSaveFeed.reject(new Error("Unable to find or save feed metadata."));
                 }
             });
 
-            return asyncJob;
-
+            return dfdSaveFeed.promise;
         }
     });
 });

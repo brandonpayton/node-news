@@ -1,5 +1,6 @@
 define([
     "./postgres",
+    "./FeedRestApi",
     "./store/all"
 ], function() {
     
