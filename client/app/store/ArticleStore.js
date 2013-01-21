@@ -10,15 +10,14 @@ define([
     }
 
     return declare([], {
-        _feedUrl: null,
+        dataUrl: null,
 
-        idProperty: "_id",
-        constructor: function(feedUrl) {
-            this._feedUrl = feedUrl;
+        constructor: function(args) {
+            declare.safeMixin(this, args);
         },
 
         getIdentity: function(object) {
-            return object[this.idProperty];
+            return object.id;
         },
 
         get: function(id) {
@@ -40,7 +39,15 @@ define([
         },
 
         query: function(query, options) {
-            var asyncResults = request(this._feedUrl + "/articles", {
+            var queryUrl = this.dataUrl;
+            if(query.feedUrl !== undefined) {
+                queryUrl += "/feed/" + encodeURIComponent(query.feedUrl) + "/articles";
+            } else if(query.tag !== undefined) {
+                queryUrl += "/tag/" + query.tag + "/articles";
+            } else {
+            }
+            
+            var asyncResults = request(queryUrl, {
                 handleAs: "json"
             }).then(function(results) {
                 results.forEach(readArticle);

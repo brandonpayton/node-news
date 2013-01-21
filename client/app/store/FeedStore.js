@@ -14,28 +14,26 @@ define([
     var putHeaders = { 'Content-Type': 'application/json' };
 
     return declare([], {
-        dataUrl: "../data",
 
-        get: function() {
-          throw new Error("Ouch");
+        dataUrl: null,
+
+        constructor: function(args) {
+            declare.safeMixin(this, args);
         },
 
         add: function(feedData, options) {
             var feed = lang.mixin({ type: "feed" }, feedData);
             return request.post(this.dataUrl + "/feeds", {
                 headers: putHeaders,
-                data: JSON.stringify(feed),
-                handleAs: "json"
+                data: JSON.stringify(feed)
             });
         },
 
-        put: function(feedData, options) {
-            var feed = lang.mixin({ type: "feed" }, feedData);
-                // TODO: URL Encode or does dojo/request do that? (Probably not)
-                url = this.dataUrl + "/feeds/" + object._id;
+        put: function(feed, options) {
+            var url = this.dataUrl + "/feed/" + encodeURIComponent(feed.url);
             return request.put(url, {
                 headers: putHeaders,
-                data: JSON.stringify(object)
+                data: JSON.stringify(feed)
             });
         },
 
@@ -46,18 +44,16 @@ define([
         query: function(query, options) {
             query = query || {};
             if(query.tag !== undefined) {
-                return QueryResults(request(this.dataUrl + "/tag/" + encodeURIComponent(query.tag), {
-                    handleAs: "json"
-                }));
+                var url = this.dataUrl + "/tag/" + encodeURIComponent(query.tag) + "/feeds";
+                return QueryResults(request(url, { handleAs: "json" }));
             } else {
-                return QueryResults(request(this.dataUrl + "/feeds", {
-                    handleAs: "json"
-                }));
+                var url = this.dataUrl + "/feeds";
+                return QueryResults(request(url, { handleAs: "json" }));
             }
         },
 
         getIdentity: function(object) {
-          return object.type === "tag" ? object.name : object._id;
+          return object.type === "tag" ? object.name : object.url;
         },
 
         mayHaveChildren: function(object) {
@@ -69,10 +65,6 @@ define([
                 throw new Error("Only a tag may have children.");
             }
             return this.query({tag: object.name });
-        },
-
-        getArticleStore: function(feedId) {
-            return Observable(new ArticleStore(this.dataUrl + "/feed/" + encodeURIComponent(feedId)));
         },
 
         _getFeedUrl: function(id) {
