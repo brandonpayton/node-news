@@ -79,10 +79,13 @@ CREATE VIEW news.typed_feed AS
         FROM news.feed LEFT OUTER JOIN news.feed_tags ON news.feed.url = news.feed_tags.feed_url;
 
 CREATE VIEW news.typed_article AS
-    SELECT 'article'::text AS type, * FROM news.article;
+    SELECT 'article'::text AS type, * FROM news.article ORDER BY date DESC;
 
+-- TODO: Test that only tags on non-deleted feeds are included.
 CREATE VIEW news.tags_and_tagless_feeds AS
-    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed GROUP BY tag
+    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed
+        WHERE feed_url IN (SELECT url FROM news.feed WHERE NOT deleted)
+        GROUP BY tag
     UNION ALL
     SELECT * FROM news.typed_feed
         WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
@@ -102,7 +105,7 @@ CREATE FUNCTION news.get_feeds_with_tag(tag text) RETURNS SETOF news.typed_feed
 LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_feed
-        WHERE url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1) AND NOT deleted
+        WHERE url IN (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1) AND NOT deleted
         ORDER BY name;
 $$;
 
@@ -150,16 +153,14 @@ CREATE FUNCTION news.get_articles_for_feed(feed_url text) RETURNS SETOF news.typ
 LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_article
-        WHERE feed_url = $1
-        ORDER BY date;
+        WHERE feed_url = $1;
 $$;
 
 CREATE FUNCTION news.get_articles_for_tag(tag text) RETURNS SETOF news.typed_article
 LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_article 
-        WHERE feed_url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1)
-        ORDER BY date;
+        WHERE feed_url in (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1);
 $$;
 
 CREATE FUNCTION news.save_article(
