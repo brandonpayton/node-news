@@ -10,11 +10,14 @@ define([
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/date/locale",
+    "dojo/mouse",
     "mustache/mustache",
     "dojo/text!./templates/ArticleListRowTemplate.html",
     "dijit/_WidgetBase",
-    "dgrid/OnDemandList"
-], function(declare, lang, Deferred, when, on, topic, query, domConstruct, domAttr, domClass, dateLocale, mustache, articleListRowTemplate, _WidgetBase, OnDemandList) {
+    "dgrid/OnDemandList",
+    "dijit/Menu",
+    "dijit/MenuItem"
+], function(declare, lang, Deferred, when, on, topic, query, domConstruct, domAttr, domClass, dateLocale, dojoMouse, mustache, articleListRowTemplate, _WidgetBase, OnDemandList, Menu, MenuItem) {
 
     var rowTemplate = mustache.compile(articleListRowTemplate);
 
@@ -37,7 +40,7 @@ define([
 
     return declare("app.widget.ArticleList", [ _WidgetBase ], {
         _list: null,
-        _store: null,
+        store: null,
         _openArticles: null,
 
         buildRendering: function() {
@@ -46,12 +49,13 @@ define([
 
             var self = this;
             var articleList = this._list = new OnDemandList({
+                store: this.store,
                 showHeader: false,
                 getBeforePut: false,
                 renderRow: function(value) {
                     var rowElement = domConstruct.create("article");
                     setRowContent(rowElement, value);
-                    if(self._openArticles[self._store.getIdentity(value)]) {
+                    if(self._openArticles[self.store.getIdentity(value)]) {
                         openRow(rowElement);
                     }
                     return rowElement;
@@ -66,15 +70,21 @@ define([
 
             var self = this;
             var list = this._list;
-            this.subscribe("/feed/select", function(args) {
+            this.subscribe("/feed/select", function(feedUrl) {
                 // Default all articles to closed.
                 self._openArticles = { };
-
-                this._store = args.articleStore;
-                list.set('store', this._store);
+                list.set('query', { feedUrl: feedUrl });
+            });
+            this.subscribe("/tag/select", function(tag) {
+                // Default all articles to closed.
+                self._openArticles = { };
+                list.set('query', { tag: tag });
             });
 
             list.on(".dgrid-row:click", function(event) {
+                // Short-circuit if this isn't a left-click
+                if(!dojoMouse.isLeft(event)) { return; }
+
                 var row = list.row(event);
                 var article = row.data;
 
@@ -89,7 +99,7 @@ define([
                 }
 
                 if(isRowHeaderClick()) {
-                    var store = self._store,
+                    var store = self.store,
                         articleId = store.getIdentity(article),
                         unpopulated = article.description === undefined,
                         isOpening = self._openArticles[articleId] !== true;

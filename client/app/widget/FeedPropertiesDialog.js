@@ -30,14 +30,22 @@ define([
         _getValueAttr: function() {
             // TODO: Convert this to use a dojo Form and get a built-in _getValueAttr
             var w = this._widget;
+
+            var tags = w.tagsBox.get('value');
+            tags = tags.replace(/\s+/g, " ");
+            tags = tags.split(" ");
+
             return {
-                url: w.urlBox.get('value')
+                url: w.urlBox.get('value'),
+                tags: tags
             };
         },
 
         _setValueAttr: function(/*Object*/ obj) {
             var w = this._widget;
-            w.urlBox.set("value", obj.url);
+            w.urlBox.set("disabled", !!obj.url);
+            w.urlBox.set("value", obj.url || "");
+            w.tagsBox.set("value", obj.tags ? obj.tags.join(" ") : "");
         }
     });
 });

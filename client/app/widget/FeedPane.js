@@ -33,7 +33,7 @@ define([
 
     return declare("app.widget.FeedPane", [ _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin ], {
         baseClass: "feedPane",
-        _store: null,
+        store: null,
         _list: null,
         _contextMenu: null,
         templateString: template,
@@ -41,25 +41,25 @@ define([
         _feedPropertiesDialog: null,
 
         constructor: function(args) {
-            // TODO: Get rid of this global reference and use dependency injection instead.
-            this._store = app.feedStore;
            this._feedPropertiesDialog = new FeedPropertiesDialog();
         },
 
         buildRendering: function() {
             this.inherited(arguments);
 
-            var list = this._list = new FeedList({ store: this._store }, this.feedListElement);
-            list.set("className", "feed-list");
-            list.set("store", app.feedStore);
+            var store = this.store;
+            var list = this._list = new FeedList({
+                className: "feed-list",
+                store: store
+            }, this.feedListElement);
+            list.set("query", null);
 
-            var store = this._store;
             var contextMenu = this._contextMenu = new Menu({ baseClass: "contextMenu", refocus: false });
             contextMenu.addChild(new MenuItem({
                 label: "Delete Feed",
                 onClick: function() {
                     store.remove(contextMenu.feedId).then(function() {
-                        // TODO: Probably select root feed collection once feeds are nested under root and tag.
+                        list.refresh();
                     }, function(err) {
                         // TODO: How to report errors. I'd like something simple, non-invasive across the app. Maybe it's better to do local popups (tooltips) with error messages.
                     });
@@ -70,46 +70,62 @@ define([
         postCreate: function() {
             this.inherited(arguments);
 
+            var store = this.store;
             var list = this._list;
+            var contextMenu = this._contextMenu;
+            var feedPropertiesDialog = this._feedPropertiesDialog;
             list.on("dgrid-select", function(event) {
                 var row = event.rows[0],
                     item = row.data;
 
-                var feedId = app.feedStore.getIdentity(item);
-                topic.publish("/feed/select", {
-                    feed: feedId,
-                    articleStore: app.feedStore.getArticleStore(feedId)
-                });
+                var id = store.getIdentity(item);
+                if(item.type === "tag") {
+                    topic.publish("/tag/select", id);
+                } else if(item.type === "feed") {
+                    topic.publish("/feed/select", id);
+                }
             });
-            var self = this;
             list.on(".dgrid-row:contextmenu", function(event) {
                 var row = list.row(event);
 
-                var menu = self._contextMenu;
-                menu.feedId = self._store.getIdentity(row.data);
-                menu._scheduleOpen(event.target, null, { x: event.pageX, y: event.pageY });
+                if(row.data.type === "feed") {
+                    contextMenu.feedId = store.getIdentity(row.data);
+                    contextMenu._scheduleOpen(event.target, null, { x: event.pageX, y: event.pageY });
+                }
+
+                event.preventDefault();
+            });
+            list.on(".dgrid-row:dblclick", function(event) {
+                var row = list.row(event);
+
+                if(row.data.type === "feed") {
+                    var fpd = feedPropertiesDialog;
+                    fpd.set('title', "Edit Feed");
+                    fpd.set('value', row.data);
+                    fpd.show().then(function(resultsPromise) {
+                        resultsPromise.then(function() {
+                            var updatedFeed = lang.mixin({}, row.data, fpd.get('value'));
+                            store.put(updatedFeed).then(function() {
+                                list.refresh();
+                            });
+                        });
+                    });
+                }
 
                 event.preventDefault();
             });
         },
 
         handleAddClick: function() {
+            var self = this;
             var fpd = this._feedPropertiesDialog;
             fpd.set('title', "Add Feed");
+            fpd.set('value', {});
             fpd.show().then(function(resultsPromise) {
                 resultsPromise.then(function() {
-                    app.feedStore.add(fpd.get('value')); 
-                });
-            });
-        },
-
-        handleEditClick: function() {
-            var fpd = this._feedPropertiesDialog;
-            fpd.set('title', "Edit Feed");
-            fpd.set('value', { name: 'sample name', url: 'sample url' });
-            fpd.show().then(function(resultsPromise) {
-                resultsPromise.then(function() {
-                    
+                    self.store.add(fpd.get('value')).then(function() {
+                        self._list.refresh();
+                    });
                 });
             });
         },
