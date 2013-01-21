@@ -45,23 +45,30 @@ define([
             // TODO: Handle "error" event if there is one and create aggregate error notification article for this feed.
             feedparser.parseUrl(feed.url)
             .on("article", function(article) {
-                // TODO: Consider whether feedUrl + guid should be key instead of separate id property.
-                var articleQuery = {
-                    feedUrl: feed.url,
-                    guid: article.guid
-                };
+                try {
+                    // TODO: Consider whether feedUrl + guid should be key instead of separate id property.
+                    var articleQuery = {
+                        feedUrl: feed.url,
+                        guid: article.guid
+                    };
 
-                articleSavePromises.push(
-                    articleStore.query(articleQuery).then(function(results) {
-                        if(results.length === 0) {
-                            return articleStore.add(article);
-                        }
-                    })
-                );
+                    articleSavePromises.push(
+                        articleStore.query(articleQuery).then(function(results) {
+                            if(results.length === 0) {
+                                return articleStore.add(article);
+                            }
+                        })
+                    );
+                } catch(err) {
+                    console.error(err);
+                }
             })
             .on("end", function() {
                 var resolve = lang.hitch(dfdUpdate, "resolve");
-                all(articleSavePromises, resolve, resolve);
+                all(articleSavePromises, resolve, function(err) {
+                    console.error(err);
+                    resolve();
+                });
             });
 
             return dfdUpdate.promise;
@@ -83,18 +90,22 @@ define([
             })
             .on("meta", function(metadata) {
                 if(!dfdSaveFeed.isFulfilled()) {
-                    var feed = {
-                        url: url,
-                        name: metadata.title,
-                        tags: tags
-                    };
-                    feedSavePromise = feedStore.add(feed);
-                    feedSavePromise.then(function(feedResult) {
-                        function resolve() { dfdSaveFeed.resolve(feedResult); }
-                        return feedUpdater.updateFeed(feed).then(resolve, resolve);
-                    }, function(err) {
+                    try {
+                        var feed = {
+                            url: url,
+                            name: metadata.title,
+                            tags: tags
+                        };
+                        feedSavePromise = feedStore.add(feed);
+                        feedSavePromise.then(function(feedResult) {
+                            function resolve() { dfdSaveFeed.resolve(feedResult); }
+                            return feedUpdater.updateFeed(feed).then(resolve, resolve);
+                        }, function(err) {
+                            dfdSaveFeed.reject(err);
+                        });
+                    } catch(err) {
                         dfdSaveFeed.reject(err);
-                    });
+                    }
                 }
             })
             .on("end", function() {
