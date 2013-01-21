@@ -13,41 +13,28 @@ define([
     "./FeedUpdater"
 ], function(contextRequire, when, http, send, url, Deferred, postgres, nodeCallback, FeedStore, Observable, FeedRestApi, FeedUpdater) {
 
-    var connectionString = "tcp://localhost/news_db",
-        feedStore;
+    var connectionString = "tcp://localhost/news",
+        feedStore,
+        feedUpdater;
 
     postgres.createClient(connectionString).then(function(postgresClient) {
         feedStore = new FeedStore(postgresClient);
+        feedUpdater = new FeedUpdater(feedStore);
 
         return feedStore.query().then(function(allFeedsQueryResults) {
-            /*
-            allFeedsQueryResults.observe(function(feed, removedFrom, insertedInto) {
-                if(removedFrom > 0) {
-                    if(insertedInto > 0) {
-                        // Updated. For now, do nothing.
-                    } else {
-                        // Deleted. Do nothing.
-                    }
-                } else {
-                    // Added.
-                    feedUpdater.updateFeed(feed);
-                }
-            });
             setTimeout(function updateFeeds() {
-                allFeedsQueryResults.forEach(feedUpdater.queueFeed.bind(feedUpdater));
+                allFeedsQueryResults.forEach(function(feed) {
+                    feedUpdater.queueFeed(feed);
+                });
                 // TODO: Need to think about how to do this better than update all at the same time.
                 
                 setTimeout(updateFeeds, 1000 * 60 * 30);
             }, 0);
-            */
         }, function(err) {
             console.error("Unable to get feeds list.");
             throw err;
         });
     }).then(function() {
-        var feedUpdater = new FeedUpdater(feedStore),
-            feedRestApi = new FeedRestApi(feedStore, feedUpdater);
-
         http.createServer(function(req, res) {
             var u = url.parse(req.url)
             console.log("connect", u.pathname)
@@ -63,10 +50,8 @@ define([
                 res.end('Redirecting to ' + path);
             }
 
-            var clientUrlPattern = new RegExp("^/client|dojo/"),
-                dataUrlPattern = new RegExp("^/data(/.*)"),
-                match,
-                dataPath;
+            var feedRestApi = new FeedRestApi("/data/", feedStore, feedUpdater),
+                clientUrlPattern = new RegExp("^/client|dojo/");
 
             if([ "", "/", "/client" ].indexOf(u.pathname) >= 0) {
                 redirect("/client/client.html");
@@ -77,10 +62,9 @@ define([
                 .root(contextRequire.toUrl(".") + "/..")
                 .on('error', console.error)
                 .pipe(res);
-            } else if(match = dataUrlPattern.exec(u.pathname)) {
+            } else if(feedRestApi.isApiPath(u.pathname)) {
                 console.log("data", u.pathname);
-                dataPath = match[1];
-                feedRestApi.serve(dataPath, req, res);
+                feedRestApi.serve(req, res);
             } else {
                 res.statusCode = 404;
                 res.end(http.STATUS_CODES[404]);
