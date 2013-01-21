@@ -8,7 +8,12 @@ define([
 
 ], function(declare, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template) {
     return declare("app.ui.Desktop", [ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
+        class: "news-app",
+
         templateString: template,
-        gutters: true
+        gutters: true,
+
+        feedStore: null,
+        articleStore: null
     });
 });

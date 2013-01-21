@@ -23,16 +23,16 @@ define([
     'dojo/has',
     'dojo/_base/lang',
     './store/FeedStore',
-    'dojo/store/JsonRest',
+    './store/ArticleStore',
     'dojo/store/Observable'
-], function (app, require, has, lang, FeedStore, JsonRestStore, Observable) {
-    lang.mixin(app, {
-        // TODO: Convert these to first-class stores dedicated to Feeds and Articles.
-        feedStore: Observable(new FeedStore())
-    });
-
-    require([ './ui/Desktop', 'dojo/domReady!' ], function (Desktop) {
-        app.desktop = new Desktop({ class: 'news-app' }).placeAt(document.body);
-        app.desktop.startup();
+], function (app, require, has, lang, FeedStore, ArticleStore, Observable) {
+    require([ './ui/Desktop', 'dojo/domReady!' ], function (Ui) {
+        var dataUrl = "../data";
+        var ui = new Ui({
+            feedStore: new FeedStore({ dataUrl: dataUrl }),
+            articleStore: new ArticleStore({ dataUrl: dataUrl })
+        });
+        ui.placeAt(document.body);
+        ui.startup();
     });
 });

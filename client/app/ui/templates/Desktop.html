@@ -1,8 +1,9 @@
 <div>
     <div data-dojo-type="app/widget/FeedPane"
-        data-dojo-props="splitter:true, region: 'leading'"
-        data-dojo-attach-point="feedTree"
+        data-dojo-props="splitter:true, region: 'leading', store: this.feedStore"
+        data-dojo-attach-point="feedPane"
         style="width: 20%;"></div>
-    <div data-dojo-props="region: 'center', splitter: true" data-dojo-type="app/widget/ArticleList"
+    <div data-dojo-type="app/widget/ArticleList"
+        data-dojo-props="region: 'center', splitter: true, store: this.articleStore"
         data-dojo-attach-point="articleList"></div>
 </div>
