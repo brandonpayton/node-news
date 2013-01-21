@@ -51,20 +51,38 @@ define([
         },
 
         put: function(article) {
-            var articleRow = articleToRow(article);
-
             var paramSpecs = [],
-                paramValues = [];
+                paramValues = [],
+                applicablePropertyNames = [
+                    'feedUrl',
+                    'guid',
+                    'date',
+                    'link',
+                    'author',
+                    'title',
+                    'summary',
+                    'description',
+                    'id'
+                ];
 
+            var articleToPut = applicablePropertyNames.reduce(function(memo, propName) {
+                memo[propName] = article[propName];
+                return memo;
+            }, { });
+
+            var articleRow = articleToRow(articleToPut);
             Object.keys(articleRow).forEach(function(paramName, i) {
                 var paramValue = articleRow[paramName];
                 paramSpecs.push(paramName + " := $" + (paramSpecs.length + 1));
                 paramValues.push(paramValue);
             });
+
             return this._postgresClient.query(
-                "SELECT news.save_article(" + paramSpecs.join(",") + ")",
+                "SELECT * FROM news.save_article(" + paramSpecs.join(",") + ");",
                 paramValues
-            );
+            ).then(function(result) {
+                return result.rows[0].save_article;
+            });
         },
 
         get: function(id) {
@@ -84,14 +102,27 @@ define([
             });
         },
 
-        query: function() {
-            var resultPromise = this._postgresClient.query(
-                "SELECT * FROM news.get_articles_by_feed(url := $1);",
-                [ this._feedUrl ]
-            );
+        query: function(query) {
+            var resultPromise;
+            if(query === undefined) {
+                resultPromise = this._postgresClient.query(
+                    "SELECT * FROM news.get_articles_for_feed(feed_url := $1);",
+                    [ this._feedUrl ]
+                );
+            } else if(query.feedUrl && query.guid) {
+                // TODO: Write test for this.
+                // TODO: Convert this to postgres function
+                // TODO: Would it be appropriate for a query to return non-objects but rather a bool indicating existence?
+                resultPromise = this._postgresClient.query(
+                    "SELECT * FROM news.typed_article WHERE feed_url = $1 AND guid = $2;",
+                    [ query.feedUrl, query.guid ]
+                );
+            } else {
+                throw new Error("Unsupported query.");
+            }
 
             return QueryResults(resultPromise.then(function(result) {
-                return result.map(rowToArticle);
+                return result.rows.map(rowToArticle);
             }));
         }
     });

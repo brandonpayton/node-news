@@ -64,14 +64,18 @@ define([
             return this._postgresClient.query(
                 "SELECT * FROM news.save_feed(url := $1, name := $2, tags := $3);",
                 [ object.url, object.name, serializeTags(object.tags) ]
-            );
+            ).then(function(result) {
+                return result.rows[0].save_feed;
+            });
         },
 
         remove: function(id) {
+            function ignoreResultValue() { }
+
             return this._postgresClient.query(
                 "SELECT news.soft_delete_feed(url := $1);",
                 [ id ]
-            );
+            ).then(ignoreResultValue);
         },
 
         query: function(query, options) {
@@ -83,7 +87,7 @@ define([
                     "SELECT * FROM news.get_feeds_with_tag(tag := $1);",
                     [ query.tag ]
                 );
-            } else if(query.includeTags && includeTaglessFeeds) {
+            } else if(query.includeTags && query.includeTaglessFeeds) {
                 resultPromise = this._postgresClient.query(
                     "SELECT * FROM news.get_tags_and_tagless_feeds();"
                 );
