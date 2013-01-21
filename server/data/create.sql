@@ -43,7 +43,8 @@ CREATE TABLE news.article (
     author text,
     title text,
     summary text,
-    description text
+    description text,
+    read boolean DEFAULT false
 );
 
 /*
@@ -172,6 +173,7 @@ CREATE FUNCTION news.save_article(
     title text,
     summary text,
     description text,
+    read boolean DEFAULT false,
     id integer DEFAULT NULL
 ) RETURNS SETOF news.article.id%TYPE
 LANGUAGE plpgsql
@@ -187,7 +189,8 @@ AS $$
                 author = save_article.author,
                 title = save_article.title,
                 summary = save_article.summary,
-                description = save_article.description
+                description = save_article.description,
+                read = save_article.read
                     WHERE article.id = save_article.id
                 RETURNING article.id;
         ELSE

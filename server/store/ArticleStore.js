@@ -62,6 +62,7 @@ define([
                     'title',
                     'summary',
                     'description',
+                    'read',
                     'id'
                 ];
 
