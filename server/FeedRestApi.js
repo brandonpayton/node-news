@@ -69,7 +69,10 @@ define([
         return {
             feeds: {
                 "GET": function() {
-                    return feedStore.query();
+                    return feedStore.query({
+                        includeTags: true,
+                        includeTaglessFeeds: true
+                    });
                 },
                 "POST": function(data) {
                     if(!data.url) {

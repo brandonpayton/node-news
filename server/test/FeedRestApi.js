@@ -41,8 +41,9 @@ define([
         function feeds_GET(t) {
             var expectedResponse = [ { mockResponse: "mockResponse" } ];
             var feedStoreMock = {
-                query: function() {
-                    t.assertEqual(0, arguments.length);
+                query: function(query) {
+                    t.assertTrue(query.includeTags);
+                    t.assertTrue(query.includeTaglessFeeds);
                     return expectedResponse;
                 }
             };

@@ -6,20 +6,12 @@ define([
     "./ArticleStore"
 ], function(lang, declare, Deferred, QueryResults, ArticleStore) {
 
+    // TODO: node-postgres handles deserialization of arrays. Fix node-postgres to handle serialization as well.
     function serializeTags(tags) {
         if(tags) {
             return "{" + tags.join(",") + "}";
         } else {
             return "{}";
-        }
-    }
-    function deserializeTags(tagsStr) {
-        if(tagsStr === null) {
-            return [];
-        } else {
-            tagsStr = tagsStr.replace(/^{/, "").replace(/}$/, "");
-            var match = tagsStr.match(/([^,]+)(?=,|$)/g);
-            return match !== null ? match : [];
         }
     }
 
@@ -29,7 +21,7 @@ define([
             name: row.name,
             url: row.url,
             deleted: row.deleted,
-            tags: deserializeTags(row.tags)
+            tags: row.tags
         }
     }
 
@@ -91,9 +83,17 @@ define([
                     "SELECT * FROM news.get_feeds_with_tag(tag := $1);",
                     [ query.tag ]
                 );
-            } else {
+            } else if(query.includeTags && includeTaglessFeeds) {
                 resultPromise = this._postgresClient.query(
                     "SELECT * FROM news.get_tags_and_tagless_feeds();"
+                );
+            } else {
+                if(Object.keys(query).length > 0) {
+                    throw new Error("Unsupported query.");
+                } 
+
+                resultPromise = this._postgresClient.query(
+                    "SELECT * FROM news.typed_feed ORDER BY name;"
                 );
             }
 
@@ -119,10 +119,9 @@ define([
         },
 
         getArticlesForTag: function(tag) {
-            var articlesPromise = this._postgresClient.query(
-                "SELECT * FROM news.get_articles_by_tag(tag := $1);",
-                [ query.tag ],
-                nodeCallback(dfdResults)
+            return this._postgresClient.query(
+                "SELECT * FROM news.get_articles_for_tag(tag := $1);",
+                [ tag ]
             ).then(function(results) {
                 return results.rows.map(ArticleStore.rowToArticle);
             });
