@@ -47,13 +47,13 @@ define([
             .on("article", function(article) {
                 try {
                     // TODO: Consider whether feedUrl + guid should be key instead of separate id property.
-                    var articleQuery = {
+                    var existingArticleQuery = {
                         feedUrl: feed.url,
                         guid: article.guid
                     };
 
                     articleSavePromises.push(
-                        articleStore.query(articleQuery).then(function(results) {
+                        articleStore.query(existingArticleQuery).then(function(results) {
                             if(results.length === 0) {
                                 return articleStore.add(article);
                             }
@@ -64,10 +64,11 @@ define([
                 }
             })
             .on("end", function() {
-                var resolve = lang.hitch(dfdUpdate, "resolve");
-                all(articleSavePromises, resolve, function(err) {
+                all(articleSavePromises).then(function() {
+                    dfdUpdate.resolve();    
+                }, function(err) {
                     console.error(err);
-                    resolve();
+                    dfdUpdate.resolve();
                 });
             });
 
@@ -79,7 +80,8 @@ define([
                 feedStore = this._feedStore,
                 feedSavePromise = null,
                 url = feed.url,
-                tags = feed.tags;
+                tags = feed.tags,
+                self = this;
 
             feedparser.parseUrl(url)
             // TODO: Does 'error' signal the end of parsing or may feedparser encounter an error and continue?
@@ -89,7 +91,7 @@ define([
                 }
             })
             .on("meta", function(metadata) {
-                if(!dfdSaveFeed.isFulfilled()) {
+                if(!dfdSaveFeed.isRejected()) {
                     try {
                         var feed = {
                             url: url,
@@ -99,8 +101,9 @@ define([
                         feedSavePromise = feedStore.add(feed);
                         feedSavePromise.then(function(feedResult) {
                             function resolve() { dfdSaveFeed.resolve(feedResult); }
-                            return feedUpdater.updateFeed(feed).then(resolve, resolve);
-                        }, function(err) {
+                            return self.updateFeed(feed).then(resolve, resolve);
+                        }).then(null, function(err) {
+                            // TODO: What is a better way to catch both rejected feedSavePromise and exceptions in the feedSavePromise resolved handler?
                             dfdSaveFeed.reject(err);
                         });
                     } catch(err) {
