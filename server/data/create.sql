@@ -121,7 +121,7 @@ AS $$
     BEGIN
         IF EXISTS(SELECT 1 FROM news.feed WHERE feed.url = save_feed.url) THEN
             RETURN QUERY
-            UPDATE news.feed SET name = $2 WHERE feed.url = url 
+            UPDATE news.feed SET name = $2, deleted=false WHERE feed.url = save_feed.url 
                 RETURNING news.feed.url;
         ELSE
             RETURN QUERY
