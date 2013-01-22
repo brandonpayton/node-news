@@ -203,7 +203,7 @@ define([
 
                         var result = null;
                         if(method in { PUT: 1, POST: 1 }) {
-                            if(req.headers["content-type"] !== "application/json") {
+                            if(!/^\s*application\/json\s*(?:$|;)/.test(req.headers["content-type"])) {
                                 throw new HttpError(415, "Content-type must be application/json");
                             }
                             readAllData(req).then(function(data) {
