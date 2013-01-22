@@ -31,13 +31,15 @@ define([
             // TODO: Convert this to use a dojo Form and get a built-in _getValueAttr
             var w = this._widget;
 
-            var tags = w.tagsBox.get('value');
-            tags = tags.replace(/\s+/g, " ");
-            tags = tags.split(" ");
+            // Convert tag list to a map as an easy way to get a collection of unique tags
+            var tagMap = w.tagsBox.get('value').trim().split(/\s+/).reduce(function(memo, tag) {
+                memo[tag] = true;
+                return memo;
+            }, {});
 
             return {
                 url: w.urlBox.get('value'),
-                tags: tags
+                tags: Object.keys(tagMap)
             };
         },
 
