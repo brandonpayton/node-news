@@ -1,10 +1,10 @@
 <article>
     <header data-dojo-attach-point="headerNode">
-        <h1>${article.title}</h1>
-        <span class="date">${article.date}</span>
+        ${article.title}
+        <span class="date">${article.date:_formatDate}</span>
     </header>
     <section class="content">
-        <a href="${article.link}" target="_blank"><h1>${article.title}<h1></a>
+        <a href="${article.link}" target="_blank"><h1>${article.title}</h1></a>
         <span class="author">${article.author}</span>
         <section data-dojo-attach-point="articleDescriptionNode"></section>
     </section>
