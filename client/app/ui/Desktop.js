@@ -4,8 +4,10 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dojo/text!./templates/Desktop.html",
-"dojo/parser", "../widget/FeedPane", "../widget/ViewPane", "../widget/ArticleList"
-
+    // For template support
+    "dojo/parser",
+    "../widget/FeedPane",
+    "../widget/ArticleList"
 ], function(declare, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template) {
     return declare("app.ui.Desktop", [ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
         class: "news-app",
