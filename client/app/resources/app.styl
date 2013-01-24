@@ -12,6 +12,8 @@ body,
     height: 100%
     margin: 0
     overflow: hidden
+    font-family: sans-serif
+    font-size: 0.95em
 
 .feedPropertiesDialog label
     display: block
@@ -49,6 +51,12 @@ article header.unread
     .dgrid-scroller
         margin: 0
 
+.feed-list
+    .dgrid-cell
+        overflow: hidden
+        text-overflow: ellipsis
+        white-space: nowrap
+
 article
     width: 100%
     border-bottom: 1px solid green
@@ -73,8 +81,10 @@ article
         .author
             display: block
             font-size: small
-        font-size: small
 
 article.open .content 
     display: block
+    overflow: auto
+    padding: 0.5em;
+    
 
