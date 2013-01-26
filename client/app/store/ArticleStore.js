@@ -20,6 +20,7 @@ define([
             return object.id;
         },
 
+        // TODO: Migrate articles to use composite Primary Key (feedUrl+guid). Currently, this store is broken.
         get: function(id) {
             return request(this._getArticleUrl(id), {
                 handleAs: "json"
@@ -27,7 +28,12 @@ define([
         },
 
         put: function(article, options) {
-            var articleUrl = this._getArticleUrl(this.getIdentity(article));
+            // TODO: Restore this line after migrating from int primary key to (feedUrl+guid)
+            //var articleUrl = this._getArticleUrl(this.getIdentity(article));
+            var articleUrl = this.dataUrl +
+                "/feed/" + encodeURIComponent(article.feedUrl) +
+                "/article/" + encodeURIComponent(this.getIdentity(article));
+
             return request.put(articleUrl, {
                 headers: {
                     // DOJO TODO: File bug about case-sensitive Content-Type header. If the casing isn't like this, then the default content type overrides ours.
@@ -35,7 +41,7 @@ define([
                 },
                 data: JSON.stringify(article),
                 handleAs: "json"
-            }).then(readArticle);
+            });
         },
 
         query: function(query, options) {
@@ -54,10 +60,14 @@ define([
                 return results;
             });
             return QueryResults(asyncResults);
-        },
-
-        _getArticleUrl: function getArticleUrl(id) {
-            return this._feedUrl + "/article/" + encodeURIComponent(id);
         }
+        // TODO: Resume using this after converting to feedUrl+guid primary key.
+        /*
+        _getArticleUrl: function(feedUrl, guid) {
+            return this.dataUrl +
+                "/feed/" + encodeURIComponent(article.feedUrl) +
+                "/article/" + encodeURIComponent(guid);
+        }
+        */
     });
 });
