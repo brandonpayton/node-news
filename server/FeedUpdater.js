@@ -100,8 +100,9 @@ define([
                         };
                         feedSavePromise = feedStore.add(feed);
                         feedSavePromise.then(function(feedResult) {
-                            function resolve() { dfdSaveFeed.resolve(feedResult); }
-                            return self.updateFeed(feed).then(resolve, resolve);
+                            return self.updateFeed(feed).always(function() {
+                                dfdSaveFeed.resolve(feedResult);
+                            });
                         }).then(null, function(err) {
                             // TODO: What is a better way to catch both rejected feedSavePromise and exceptions in the feedSavePromise resolved handler?
                             dfdSaveFeed.reject(err);
