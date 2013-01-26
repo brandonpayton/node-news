@@ -48,6 +48,7 @@ define([
                 renderRow: function(article) {
                     var articleRowWidget = new ArticleRow({
                         article: article,
+                        store: self.store,
                         open: self._openArticlesMap[self.store.getIdentity(article)]
                     });
 
