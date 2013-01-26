@@ -45,22 +45,24 @@ define([
         buildRendering: function() {
             this.inherited(arguments);
 
-            var store = this.store;
             var list = this._list = new FeedList({
                 className: "feed-list",
-                store: store
+                store: this.store
             }, this.feedListElement);
             list.set("query", null);
 
+            var self = this;
             var contextMenu = this._contextMenu = new Menu({ baseClass: "contextMenu", refocus: false });
             contextMenu.addChild(new MenuItem({
-                label: "Delete Feed",
+                label: "Edit",
                 onClick: function() {
-                    store.remove(contextMenu.feedId).then(function() {
-                        list.refresh();
-                    }, function(err) {
-                        // TODO: How to report errors. I'd like something simple, non-invasive across the app. Maybe it's better to do local popups (tooltips) with error messages.
-                    });
+                    self.handleEditFeed(contextMenu.feed);
+                }
+            }));
+            contextMenu.addChild(new MenuItem({
+                label: "Unsubscribe",
+                onClick: function() {
+                    self.handleRemoveFeed(contextMenu.feed);
                 }
             }));
         },
@@ -71,7 +73,6 @@ define([
             var store = this.store;
             var list = this._list;
             var contextMenu = this._contextMenu;
-            var feedPropertiesDialog = this._feedPropertiesDialog;
 
             list.on("dgrid-select", function(event) {
                 var row = event.rows[0],
@@ -88,31 +89,21 @@ define([
                 var row = list.row(event);
 
                 if(row.data.type === "feed") {
-                    contextMenu.feedId = store.getIdentity(row.data);
+                    contextMenu.feed = row.data;
                     contextMenu._scheduleOpen(event.target, null, { x: event.pageX, y: event.pageY });
                 }
 
                 event.preventDefault();
             });
-            list.on(".dgrid-row:dblclick", function(event) {
+            list.on(".dgrid-row:dblclick", lang.hitch(this, function(event) {
                 var row = list.row(event);
 
                 if(row.data.type === "feed") {
-                    var fpd = feedPropertiesDialog;
-                    fpd.set('title', "Edit Feed");
-                    fpd.set('value', row.data);
-                    fpd.show().then(function(resultsPromise) {
-                        resultsPromise.then(function() {
-                            var updatedFeed = lang.mixin({}, row.data, fpd.get('value'));
-                            store.put(updatedFeed).then(function() {
-                                list.refresh();
-                            });
-                        });
-                    });
+                    this.handleEditFeed(row.data);
                 }
 
                 event.preventDefault();
-            });
+            }));
 
             //
             // Auto expand selected row but only toggle expansion for clicks on already-selected row
@@ -154,11 +145,29 @@ define([
             });
         },
 
-        handleFeedClick: function(item) {
+        handleEditFeed: function(feed) {
+            var self = this;
+            var fpd = this._feedPropertiesDialog;
+            fpd.set('title', "Edit Feed");
+            fpd.set('value', feed);
+            fpd.show().then(function(resultsPromise) {
+                resultsPromise.then(function() {
+                    var updatedFeed = lang.mixin({}, feed, fpd.get('value'));
+                    self.store.put(updatedFeed).then(function() {
+                        self._list.refresh();
+                    });
+                });
+            });
         },
 
-        handleRemoveClick: function() {
-
+        handleRemoveFeed: function(feed) {
+            var self = this;
+            var feedId = this.store.getIdentity(feed);
+            this.store.remove(feedId).then(function() {
+                self._list.refresh();
+            }, function(err) {
+                // TODO: How to report errors. I'd like something simple, non-invasive across the app. Maybe it's better to do local popups (tooltips) with error messages.
+            });
         }
     });
 });
