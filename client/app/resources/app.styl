@@ -1,4 +1,4 @@
-@import '../../dijit/themes/tundra/tundra.css'
+@import '../../dijit/themes/claro/claro.css'
 @import '../../dgrid/css/dgrid.css'
 
 // NOTE: Intentionally omitting a global-reset so feed article HTML renders with default styles. We'll see how it goes.
@@ -13,28 +13,39 @@ body,
     font-family: sans-serif
     font-size: 0.95em
 
-.feedPropertiesDialog label
-    display: block
-    margin-left: auto
-    text-align: right
+.feedPropertiesDialog
+    padding: 0.3em 1em
 
+    label
+        display: block
+        margin-left: auto
+        text-align: right
+        margin-bottom: 0.45em
 
-.feedPropertiesDialog .controlContainer 
-    width: 20em
-    display: inline-block
-    text-align: left
+    .controlContainer 
+        width: 20em
+        display: inline-block
+        text-align: left
 
-.feedPropertiesDialog .dijitTextBox 
-    margin-right: auto
+    .dijitTextBox 
+        margin-right: auto
 
-.feedPropertiesDialog .controlContainer .dijitTextBox
-    width: 100%
+    .controlContainer .dijitTextBox
+        width: 100%
 
-.dialogButtons
-    text-align: center
+    .dialog-buttons
+        text-align: center
+        margin-top: 1em
 
-article header.unread
-    font-weight: bold
+.feed-pane
+    .title
+        display: inline-block
+        font-size: large
+        font-style: italic
+    .subscribe-button
+        float: right
+    .title, .subscribe-button
+        margin: 0.3em
 
 .dgrid
     border: 0
@@ -56,20 +67,26 @@ article header.unread
 
 .feed-list
     .dgrid-cell
+        cursor: default
         overflow: hidden
         text-overflow: ellipsis
         white-space: nowrap
     overflow: auto;
+
 .article-list
     .dgrid-row
         width: 100%
         border-bottom: 1px solid green
 
+        >header
+            cursor: pointer
         header
             background-color: #DDD
             padding: 0.4em
         header > h1
             display: inline
+        header.unread
+            font-weight: bold
 
         .date
             float: right
@@ -82,11 +99,14 @@ article header.unread
                 margin-bottom: 0.2em
                 font-size: large
 
-            .author:before
-                content: "by "
             .author
                 display: block
                 font-size: small
+                font-style: italic
+            .author:before
+                content: "by "
+            .author:empty
+                display: none
 
     .dgrid-row.open
         .content 

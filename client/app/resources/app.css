@@ -1,4 +1,4 @@
-@import '../../dijit/themes/tundra/tundra.css';
+@import '../../dijit/themes/claro/claro.css';
 @import '../../dgrid/css/dgrid.css';
 html,
 body,
@@ -10,10 +10,14 @@ body,
   font-family: sans-serif;
   font-size: 0.95em;
 }
+.feedPropertiesDialog {
+  padding: 0.3em 1em;
+}
 .feedPropertiesDialog label {
   display: block;
   margin-left: auto;
   text-align: right;
+  margin-bottom: 0.45em;
 }
 .feedPropertiesDialog .controlContainer {
   width: 20em;
@@ -26,11 +30,21 @@ body,
 .feedPropertiesDialog .controlContainer .dijitTextBox {
   width: 100%;
 }
-.dialogButtons {
+.feedPropertiesDialog .dialog-buttons {
   text-align: center;
+  margin-top: 1em;
 }
-article header.unread {
-  font-weight: bold;
+.feed-pane .title {
+  display: inline-block;
+  font-size: large;
+  font-style: italic;
+}
+.feed-pane .subscribe-button {
+  float: right;
+}
+.feed-pane .title,
+.feed-pane .subscribe-button {
+  margin: 0.3em;
 }
 .dgrid {
   border: 0;
@@ -57,6 +71,7 @@ article header.unread {
   overflow: auto;
 }
 .feed-list .dgrid-cell {
+  cursor: default;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -65,12 +80,18 @@ article header.unread {
   width: 100%;
   border-bottom: 1px solid #008000;
 }
+.article-list .dgrid-row >header {
+  cursor: pointer;
+}
 .article-list .dgrid-row header {
   background-color: #ddd;
   padding: 0.4em;
 }
 .article-list .dgrid-row header > h1 {
   display: inline;
+}
+.article-list .dgrid-row header.unread {
+  font-weight: bold;
 }
 .article-list .dgrid-row .date {
   float: right;
@@ -83,12 +104,16 @@ article header.unread {
   margin-bottom: 0.2em;
   font-size: large;
 }
-.article-list .dgrid-row .content .author:before {
-  content: "by ";
-}
 .article-list .dgrid-row .content .author {
   display: block;
   font-size: small;
+  font-style: italic;
+}
+.article-list .dgrid-row .content .author:before {
+  content: "by ";
+}
+.article-list .dgrid-row .content .author:empty {
+  display: none;
 }
 .article-list .dgrid-row.open .content {
   display: block;
