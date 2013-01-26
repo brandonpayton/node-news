@@ -1,16 +1,14 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/Deferred",
     "dojo/topic",
     "dojo/on",
-    "app/main",
+    "dojo/dom-class",
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/tree",
-    // Change to relative module ID.
-    "app/widget/FeedPropertiesDialog",
+    "./FeedPropertiesDialog",
     "dijit/_WidgetBase",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
@@ -21,7 +19,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Button"
-], function(declare, lang, Deferred, topic, on, app, OnDemandGrid, Keyboard, Selection, tree, FeedPropertiesDialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, Menu, MenuItem) {
+], function(declare, lang, topic, on, domClass, OnDemandGrid, Keyboard, Selection, tree, FeedPropertiesDialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, Menu, MenuItem) {
 
     var FeedList = declare([ OnDemandGrid, Keyboard, Selection ], {
         selectionMode: "single",
@@ -114,6 +112,31 @@ define([
                 }
 
                 event.preventDefault();
+            });
+
+            //
+            // Auto expand selected row but only toggle expansion for clicks on already-selected row
+            //
+            // NOTE: This is too complicated, but this is the only way I found to avoid auto expanding
+            //  on selection and immediately toggling closed again.
+            var selectedDuringCurrentClick = false;
+            list.on("dgrid-select", function(event) {
+                selectedDuringCurrentClick = true;
+            });
+            list.on(".dgrid-cell:click", function(event) {
+                if(!domClass.contains(event.target, "dgrid-expando-icon")) {
+                    var row = list.row(event);
+                    if(selectedDuringCurrentClick) {
+                        // TODO: CONTRIB: Lobby for isExpanded method for dgrid+tree
+                        if(!list._expanded[row.id]) {
+                            list.expand(row, true);
+                        }
+                    } else {
+                        list.expand(row);
+                    }
+                }
+
+                selectedDuringCurrentClick = false;
             });
         },
 
