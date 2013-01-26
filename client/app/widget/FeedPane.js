@@ -32,7 +32,7 @@ define([
     });
 
     return declare("app.widget.FeedPane", [ _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin ], {
-        baseClass: "feedPane",
+        baseClass: "feed-pane",
         store: null,
         _list: null,
         _contextMenu: null,
@@ -74,6 +74,7 @@ define([
             var list = this._list;
             var contextMenu = this._contextMenu;
             var feedPropertiesDialog = this._feedPropertiesDialog;
+
             list.on("dgrid-select", function(event) {
                 var row = event.rows[0],
                     item = row.data;
@@ -85,7 +86,7 @@ define([
                     topic.publish("/feed/select", id);
                 }
             });
-            list.on(".dgrid-row:contextmenu", function(event) {
+            list.on(".dgrid-cell:contextmenu", function(event) {
                 var row = list.row(event);
 
                 if(row.data.type === "feed") {
