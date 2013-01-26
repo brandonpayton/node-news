@@ -14,7 +14,7 @@ define([
 ], function(declare, lang, Dialog, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template) {
     
     var FeedPropertiesWidget = declare([ _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin ], {
-        baseClass: "feedPropertiesDialog",
+        baseClass: "feed-properties-dialog",
         templateString: template
     });
 
