@@ -2,63 +2,124 @@ define([
     "dojo/_base/declare",
     "dojo/request",
     "dojo/store/util/QueryResults"
-], function(declare, request, QueryResults) {
+    /*===== , "dojo/store/api/Store" =====*/
+], function(declare, request, QueryResults /*=====, Store =====*/) {
 
-    /**
-     * Converts article data to a proper article object.
-     * @param {object} articleData Raw article data object.
-     * @returns {object} The updated article object.
-     */
-    function convertDataToArticle(articleData) {
+    // No base class, but for purposes of documentation, the base class is dojo/store/api/Store
+    var base = null;
+    /*===== base = Store =====*/
+
+    // TODO: This was taken as an example from the gfx Point documentation which included an assignment to g.Point. Does this declare need assigned to something?
+    /*=====
+    declare("client/store/Article", null, {
+		// summary:
+		//		Article from RSS/Atom feed.
+		// description:
+		//		There is no constructor for an Article. This is where the form of an Article is documented.
+
+        // feedUrl: string
+        //      The URL of the feed from whence this article came.
+        feedUrl: null,
+
+        // guid: string
+        //      A unique article identifier for the parent Feed. Not necessarily a UUID, just something unique for the Feed.
+        guid: null,
+
+        // date: Date
+        //      The last modified date
+        date: null,
+
+        // link: string
+        //      The URL of the original article
+        link: null,
+
+        // author: string
+        //      The author of the article
+        author: null,
+
+        // title: string
+        //      The title of the article
+        title: null,
+
+        // summary: string
+        //      The article summary
+        summary: null,
+
+        // description: string
+        //      The article content
+        description: null,
+        
+        // read: Boolean
+        //      Whether the Article has been read
+        read: null,
+
+        // id: Number
+        //      The Article identifier
+        id: null
+	});
+    =====*/
+
+    function convertDataToArticle(/* object */ articleData) {
+        // summary:
+        //      Converts article data to a proper article object.
+        // articleData: Object
+        //      Raw article data object
+        // returns: Article
+        //      The converted Article
+        // 
         articleData.date = new Date(articleData.date);
         return articleData;
     }
 
-    /**
-     * A data store for article objects.
-     * @constructor
-     * @implements {Store}
-     */
-    return declare(null, {
-        /**
-         * The root URL of the news aggregator API.
-         * @type {string}
-         */
+    return declare(base, {
+        // summary:
+        //      A data store for Article objects.
+
+        // dataUrl: String
+        //      The root URL of the news aggregator API.
         dataUrl: null,
 
-        /**
-         * Performs the duties of a constructor
-         * @param args {{dataUrl: string}}
-         */
         constructor: function(args) {
+            // summary:
+            //      Create the store.
+            // args: Object
+            //      Object hash containing a dataUrl property.
             declare.safeMixin(this, args);
         },
 
-        /** @inheritDoc */
+        // TODO: Is there a way with dojodoc to specify "inherit documentation"?
         getIdentity: function(article) {
+            // summary:
+            //      Returns an article's identity.
+            // article: Article
+            // returns: Number
             return article.id;
         },
 
-        /**
-         * Gets an article by id.
-         * @param {string} id The id of the desired article.
-         * @return {Promise} A promise to provide the article.
-         */
         // TODO: Look for a convention for documenting returned promises. I don't want to lose the fact that this is a promise or the type of the resolved value.
         // TODO: Migrate articles to use composite Primary Key (feedUrl+guid). Currently, this store is broken.
         get: function(id) {
+            // summary:
+            //      Retrieves an Article by its identity.
+            // id: String
+            //      The Article identity.
+            // returns: dojo/promise/Promise
+            //      A promise to retrieve the Article.
             return request(this._getArticleUrl(id), {
                 handleAs: "json"
             }).then(convertDataToArticle);
         },
 
-        /**
-         * Update an article.
-         * @param {object} article The article object to save.
-         * @param {object} options Ignored.
-         * @return {Promise} A promise to save the article.
-         */
         put: function(article, options) {
+            // summary:
+            //      Stores an Article
+            // article: Article
+            //      The Article to store.
+            // options: Object
+            //      No options are currently supported.
+            // returns: string
+            //      The identity of the Article that was stored.
+
             // TODO: Restore this line after migrating from int primary key to (feedUrl+guid)
             //var articleUrl = this._getArticleUrl(this.getIdentity(article));
             var articleUrl = this.dataUrl +
@@ -75,13 +136,15 @@ define([
             });
         },
 
-        /**
-         * Query for articles.
-         * @param {object} query The query object.
-         * @param {object} options Currently ignored but may later be used to allow requesting ranges of articles.
-         * @return {Store.QueryResults} The results of the query.
-         */
         query: function(query, options) {
+            // summary:
+            //      Queries for Article objects.
+            // query: Object
+            //      The query for retrieving Article's from the store.
+            // options: Object
+            //      Currently ignored but may later be used to allow requesting ranges of articles.
+            // returns: Store.QueryResults
+
             var queryUrl = this.dataUrl;
             if(query.feedUrl !== undefined) {
                 queryUrl += "/feed/" + encodeURIComponent(query.feedUrl) + "/articles";
