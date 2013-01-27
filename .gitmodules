@@ -4,9 +4,6 @@
 [submodule "client/dijit"]
 	path = client/dijit
 	url = https://github.com/dojo/dijit.git
-[submodule "client/dojox"]
-	path = client/dojox
-	url = https://github.com/dojo/dojox.git
 [submodule "util"]
 	path = util
 	url = https://github.com/dojo/util.git
