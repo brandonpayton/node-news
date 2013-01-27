@@ -9,7 +9,7 @@ define([
     "../widget/FeedPane",
     "../widget/ArticleList"
 ], function(declare, BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin, template) {
-    return declare("app.ui.Desktop", [ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
+    return declare([ BorderContainer, _TemplatedMixin, _WidgetsInTemplateMixin ], {
         class: "news-app",
 
         templateString: template,
