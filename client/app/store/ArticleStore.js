@@ -15,6 +15,7 @@ define([
     }
 
     /**
+     * A data store for article objects.
      * @constructor
      * @implements {Store}
      */
@@ -27,7 +28,7 @@ define([
 
         /**
          * Performs the duties of a constructor
-         * @args {{dataUrl: string}}
+         * @param args {{dataUrl: string}}
          */
         constructor: function(args) {
             declare.safeMixin(this, args);
