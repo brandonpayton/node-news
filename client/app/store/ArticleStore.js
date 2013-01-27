@@ -73,7 +73,7 @@ define([
 
     return declare(base, {
         // summary:
-        //      A data store for Article objects.
+        //      A store for RSS/Atom articles.
 
         // dataUrl: String
         //      The root URL of the news aggregator API.
@@ -92,7 +92,9 @@ define([
             // summary:
             //      Returns an article's identity.
             // article: Article
+            //      The Article to get the identity from
             // returns: Number
+            //      The Article identity
             return article.id;
         },
 
