@@ -94,12 +94,6 @@ define([
             return request.del(this._getFeedApiUrl(id));
         },
 
-        /**
-         * Queries the store for feeds and feed tags.
-         * @param {object} query The query object.
-         * @param {object} options Ignored.
-         * @return {Store.QueryResult} The query results.
-         */
         query: function(query, options) {
             // summary:
             //      Queries the store for Feeds and Tags
