@@ -1,5 +1,4 @@
-#!/bin/sh
-# TODO: The above seems like a poor assumption. Is it better to emit it altogether?
+#!/usr/bin/env bash
 
 # exit on first error
 set -e
@@ -7,8 +6,7 @@ set -e
 SCRIPT_PARENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 DATABASE_NAME="news_test"; 
 
-# TODO: check return value and only continue if prior steps succeed.
-perl -p -e "s/\\\$\{database_name\}/${DATABASE_NAME}/" < "${SCRIPT_PARENT_DIR}/../../data/create.sql"|psql
-perl -p -e "s#\\\$\{base_path\}#${SCRIPT_PARENT_DIR}#" < "${SCRIPT_PARENT_DIR}/tests.pgsql"|psql $DATABASE_NAME
+psql --set database_name=news_test < "${SCRIPT_PARENT_DIR}/../../data/create.pgsql"
+psql --set base_path=${SCRIPT_PARENT_DIR} $DATABASE_NAME < tests.pgsql
 
 exit $?

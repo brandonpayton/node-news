@@ -2,11 +2,15 @@
 
 BEGIN;
 
-\i '${base_path}/epic/epic.sql';
+\i :base_path'/epic/epic.sql';
 
-COPY news.feed (url, name) FROM '${base_path}/feedData.csv' WITH csv;
-COPY news.tag_to_feed (tag, feed_url) FROM '${base_path}/tagData.csv' WITH csv;
-COPY news.article (feed_url, guid, date, link, author, title, summary, description) FROM '${base_path}/articleData.csv' WITH csv;
+\set feed_data_file :base_path'/feedData.csv'
+\set tag_data_file :base_path'/tagData.csv'
+\set article_data_file :base_path'/articleData.csv'
+
+COPY news.feed (url, name) FROM :'feed_data_file' WITH csv;
+COPY news.tag_to_feed (tag, feed_url) FROM :'tag_data_file' WITH csv;
+COPY news.article (feed_url, guid, date, link, author, title, summary, description) FROM :'article_data_file' WITH csv;
 
 /*
  * VIEW tests
