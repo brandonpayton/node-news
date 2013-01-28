@@ -16,3 +16,6 @@
 [submodule "client/xstyle"]
 	path = client/xstyle
 	url = https://github.com/kriszyp/xstyle.git
+[submodule "server/test/data/epic"]
+	path = server/test/data/epic
+	url = https://github.com/brandonpayton/epictest.git
