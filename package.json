@@ -1,29 +1,32 @@
 {
-  "author": {
-    "name": "Brandon C. Payton",
-    "email": "brandon@happycode.net",
-    "url": "http://happycode.net"
-  },
-  "name": "news",
-  "description": "An Atom/RSS feed aggregator web application.",
-  "version": "0.0.0",
-  "homepage": "http://happycode.net",
-  "repository": {
-    "url": "http://github.com/blah"
-  },
-  "main": "server.js",
-  "scripts": {
-    "test": "test-command-TODO"
-  },
-  "dependencies": {
-    "feedparser": "0.10.x",
-    "send": "0.0.4",
-    "pg": "0.10.x",
-    "node-mocks-http": "0.0.8"
-  },
-  "devDependencies": {},
-  "optionalDependencies": {},
-  "engines": {
-    "node": "*"
-  }
+    "author": {
+        "name": "Brandon C. Payton",
+        "email": "brandon@happycode.net",
+        "url": "http://happycode.net"
+    },
+    "name": "node-news",
+    "description": "An Atom/RSS feed aggregator client and server.",
+    "version": "0.0.1",
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/brandonpayton/node-news"
+    },
+    "bugs": {
+        "url": "http://github.com/brandonpayton/node-news/issues"
+    },
+    "main": "server.js",
+    "scripts": {
+        "test": "test-command-TODO"
+    },
+    "dependencies": {
+        "feedparser": "0.10.x",
+        "send": "0.0.4",
+        "pg": "0.10.x",
+        "node-mocks-http": "0.0.8"
+    },
+    "devDependencies": {},
+    "optionalDependencies": {},
+    "engines": {
+        "node": "0.8.x"
+    }
 }
