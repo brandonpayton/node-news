@@ -5,19 +5,19 @@ define([
     "dojo/node!send",
     "dojo/node!url",
     "dojo/Deferred",
+    "./jsonLoader!./config.json",
     "./postgres",
     "./nodeCallback",
     "./store/FeedStore",
     "dojo/store/Observable",
     "./FeedRestApi",
     "./FeedUpdater"
-], function(contextRequire, when, http, send, url, Deferred, postgres, nodeCallback, FeedStore, Observable, FeedRestApi, FeedUpdater) {
+], function(contextRequire, when, http, send, url, Deferred, config, postgres, nodeCallback, FeedStore, Observable, FeedRestApi, FeedUpdater) {
 
-    var connectionString = "tcp://localhost/news",
-        feedStore,
+    var feedStore,
         feedUpdater;
 
-    postgres.createClient(connectionString).then(function(postgresClient) {
+    postgres.createClient(config.postgresConnectionString).then(function(postgresClient) {
         feedStore = new FeedStore(postgresClient);
         feedUpdater = new FeedUpdater(feedStore);
 
