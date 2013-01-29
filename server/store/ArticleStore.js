@@ -5,7 +5,7 @@ define([
     "dojo/store/util/QueryResults"
 ], function(declare, lang, Deferred, QueryResults) {
 
-    // TODO: Instead of mapping naming conventions from app to db, it would be simpler to follow the same naming conventions for both. Prefer the app's convention.
+    // TODO: Factor out this general jsProperty2column_name mapping logic into another module.
     function rowToArticle(row) {
         var underscoreSeparatedPattern = /([a-z\d])_([a-z\d])/;
         var article = {};
