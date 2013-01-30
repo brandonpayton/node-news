@@ -1,4 +1,4 @@
 {
-    "httpServerPort": 7777,
+    "httpServerPort": 8080,
     "postgresConnectionString": "postgresql://localhost/news"
 }
