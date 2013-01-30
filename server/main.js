@@ -69,7 +69,7 @@ define([
                 res.statusCode = 404;
                 res.end(http.STATUS_CODES[404]);
             }
-        }).listen(8080);
+        }).listen(config.httpServerPort);
     }, function(err) {
         console.error(err);
         process.exit(-1);
