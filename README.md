@@ -5,6 +5,22 @@ node-news is a simple RSS/Atom feed aggregator with a browser-based client and a
 Both client and server rely on the Dojo Toolkit which allows them to share similar patterns and idioms.
 PostgreSQL is used for the database.
 
+This is alpha-quality software and is missing a number of important features:
+* Unread article counts and related visual cues
+* Error reporting in the UI
+* Server support for sending ranges of articles rather than the entire list
+* Multi-word feed categories
+
+Long polling for updates and better server/client code sharing are also in mind.
+
+## Getting the Project 
+To get the project and retrieve all its dependencies:
+```
+git clone --recursive https://github.com/brandonpayton/node-news.git
+cd node-news
+npm install
+```
+
 ## Creating the Database
 
 To create a the database on a local postgres instance:
