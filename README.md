@@ -10,6 +10,7 @@ This is alpha-quality software and is missing a number of important features:
 * Error reporting in the UI
 * Server support for sending ranges of articles rather than the entire list
 * Multi-word feed categories
+* i18n support
 
 Long polling for updates and better server/client code sharing are also in mind.
 
