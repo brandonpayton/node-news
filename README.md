@@ -33,7 +33,7 @@ CAUTION: I haven't tested the client with IE yet, but nothing in the client shou
 
 ## Thanks
 
-Thanks to [Justin Pitts](https://github.com/justinpitts) for giving advice and feedback as I acquainted myself with Postgres over the last month.
+Thanks to [Justin Pitts](https://github.com/justinpitts) for giving advice and feedback as I got to know Postgres over the last month.
 
 ## License
 
