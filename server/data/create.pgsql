@@ -2,14 +2,11 @@
 
 SET check_function_bodies = true;
 
---
--- Name: ${database_name}; Type: DATABASE; Schema: -; Owner: -
---
-DROP DATABASE IF EXISTS :"database_name";
-CREATE DATABASE :"database_name" WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_US' LC_CTYPE = 'en_US';
+DROP DATABASE IF EXISTS :database_name;
+CREATE DATABASE :database_name WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_US' LC_CTYPE = 'en_US';
 
 
-\connect :"database_name"
+\connect :database_name
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
