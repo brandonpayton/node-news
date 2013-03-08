@@ -32,7 +32,6 @@ CREATE TABLE news.tag_to_feed (
 );
 
 CREATE TABLE news.article (
-    id SERIAL,
     feed_url text NOT NULL,
     guid text,
     date timestamp NOT NULL,
@@ -57,13 +56,10 @@ ALTER TABLE ONLY news.tag_to_feed
     ADD CONSTRAINT tag_to_feed_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES news.feed(url);
 
 ALTER TABLE ONLY news.article
-    ADD CONSTRAINT article_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT article_pkey PRIMARY KEY (feed_url, guid);
 
 ALTER TABLE ONLY news.article
     ADD CONSTRAINT article_feed_url_fkey FOREIGN KEY (feed_url) REFERENCES news.feed(url);
-
-ALTER TABLE ONLY news.article
-    ADD CONSTRAINT article_guid_uniqueness UNIQUE (feed_url, guid);
 
 /*
  * VIEWs
@@ -141,17 +137,16 @@ AS $$
 $$;
 
 
-CREATE FUNCTION news.get_article(id integer) RETURNS news.typed_article
+CREATE FUNCTION news.get_article(feed_url text, guid text) RETURNS news.typed_article
 LANGUAGE sql
 AS $$
-    SELECT * FROM news.typed_article WHERE id = $1;
+    SELECT * FROM news.typed_article WHERE feed_url = $1 AND guid = $2;
 $$;
 
 CREATE FUNCTION news.get_articles_for_feed(feed_url text) RETURNS SETOF news.typed_article
 LANGUAGE sql
 AS $$
-    SELECT * FROM news.typed_article
-        WHERE feed_url = $1;
+    SELECT * FROM news.typed_article WHERE feed_url = $1;
 $$;
 
 CREATE FUNCTION news.get_articles_for_tag(tag text) RETURNS SETOF news.typed_article
@@ -170,14 +165,15 @@ CREATE FUNCTION news.save_article(
     title text,
     summary text,
     description text,
-    read boolean DEFAULT false,
-    id integer DEFAULT NULL
-) RETURNS SETOF news.article.id%TYPE
+    read boolean DEFAULT false
+) RETURNS void
 LANGUAGE plpgsql
 AS $$
     BEGIN
-        IF EXISTS(SELECT 1 FROM news.article WHERE article.id = save_article.id) THEN
-            RETURN QUERY
+        IF EXISTS(
+            SELECT 1 FROM news.article
+            WHERE article.feed_url = save_article.feed_url AND article.guid = save_article.guid
+        ) THEN
             UPDATE news.article SET
                 feed_url = save_article.feed_url,
                 guid = save_article.guid,
@@ -188,13 +184,11 @@ AS $$
                 summary = save_article.summary,
                 description = save_article.description,
                 read = save_article.read
-                    WHERE article.id = save_article.id
-                RETURNING article.id;
+                    WHERE article.feed_url = save_article.feed_url AND article.guid = save_article.guid;
         ELSE
-            RETURN QUERY
-            INSERT INTO news.article (feed_url, guid, date, link, author, title, summary, description)
-                VALUES (feed_url, guid, date, link, author, title, summary, description)
-                RETURNING article.id;
+            INSERT INTO news.article
+                (feed_url, guid, date, link, author, title, summary, description) VALUES
+                (feed_url, guid, date, link, author, title, summary, description);
         END IF;
     END;
 $$;

@@ -185,12 +185,14 @@ LANGUAGE plpgsql
 AS $$
 -- module: functions
 DECLARE
+    subject_feed_url text := 'https://blog.mozilla.org/javascript/feed/';
+    subject_guid text := 'http://blog.mozilla.org/javascript/?p=223';
     expected_article news.typed_article%ROWTYPE;
     actual_article news.typed_article%ROWTYPE;
 BEGIN
-    SELECT * INTO expected_article FROM news.typed_article WHERE id = 1;
+    SELECT * INTO expected_article FROM news.typed_article WHERE feed_url = subject_feed_url AND guid = subject_guid;
     PERFORM test.assert(expected_article IS NOT NULL, 'expected_article is NULL');
-    SELECT * INTO actual_article FROM news.get_article(id := expected_article.id);
+    SELECT * INTO actual_article FROM news.get_article(feed_url := subject_feed_url, guid := subject_guid);
     PERFORM test.assert_equal(actual_article, expected_article);
 
     PERFORM test.pass();
@@ -267,10 +269,9 @@ DECLARE
     new_article_id integer;
     actual_article RECORD;
     updated_title text := 'An IMPORTANT Message from the Future';
-    updated_article_id integer;
     actual_updated_article RECORD;
 BEGIN
-    SELECT INTO new_article_id news.save_article(
+    PERFORM news.save_article(
         feed_url := expected_feed_url,
         guid := expected_guid,
         date := expected_date,
@@ -280,7 +281,7 @@ BEGIN
         summary := expected_summary,
         description := expected_description
     );
-    SELECT * INTO actual_article FROM news.get_article(id := new_article_id);
+    SELECT * INTO actual_article FROM news.get_article(feed_url := expected_feed_url, guid := expected_guid);
     PERFORM test.assert_equal(actual_article.feed_url, expected_feed_url);
     PERFORM test.assert_equal(actual_article.guid, expected_guid);
     PERFORM test.assert_equal(actual_article.date, expected_date);
@@ -290,8 +291,7 @@ BEGIN
     PERFORM test.assert_equal(actual_article.summary, expected_summary);
     PERFORM test.assert_equal(actual_article.description, expected_description);
 
-    SELECT INTO updated_article_id news.save_article(
-        id := actual_article.id,
+    PERFORM news.save_article(
         feed_url := actual_article.feed_url,
         guid := actual_article.guid,
         date := actual_article.date,
@@ -301,9 +301,8 @@ BEGIN
         summary := actual_article.summary,
         description := actual_article.description
     );
-    PERFORM test.assert_equal(new_article_id, updated_article_id);
-    SELECT * INTO actual_updated_article FROM news.get_article(id := updated_article_id);
-    SELECT updated_title INTO actual_article.title;
+    SELECT * INTO actual_updated_article FROM news.get_article(feed_url := expected_feed_url, guid := expected_guid);
+    PERFORM test.assert_equal(updated_title, actual_updated_article.title);
 
     PERFORM test.pass();
 END;
