@@ -91,6 +91,9 @@ body,
 .article-list .dgrid-row .content .author:empty {
   display: none;
 }
+.article-list .dgrid-selected {
+  background-color: transparent;
+}
 .article-list .dgrid-row.open .content {
   display: block;
   overflow: auto;
