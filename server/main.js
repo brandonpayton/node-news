@@ -54,9 +54,14 @@ define([
 			}
 
 			var feedRestApi = new FeedRestApi("/data/", feedStore, articleStore, feedUpdater),
-				clientUrlPattern = new RegExp("^/dojo|client|core/");
+				clientUrlPattern = new RegExp("^/(?:dojo|client|core)/");
 
-			if([ "", "/", "/client" ].indexOf(u.pathname) >= 0) {
+			// TODO: How should this routing work when web server proxies to this app? Currently, we assume we are at the root.
+			// Checking for API path because API paths may match the clientUrlPattern too (e.g., /data/tags/dojo)
+			if(feedRestApi.isApiPath(u.pathname)) {
+				console.log("data", u.pathname);
+				feedRestApi.serve(req, res);
+			} else if([ "", "/", "/client" ].indexOf(u.pathname) >= 0) {
 				redirect("/client/client.html");
 			} else if(clientUrlPattern.test(u.pathname)) {
 				// Send static client resources.
@@ -65,9 +70,6 @@ define([
 				.root(contextRequire.toUrl(".") + "/..")
 				.on('error', console.error)
 				.pipe(res);
-			} else if(feedRestApi.isApiPath(u.pathname)) {
-				console.log("data", u.pathname);
-				feedRestApi.serve(req, res);
 			} else {
 				res.statusCode = 404;
 				res.end(http.STATUS_CODES[404]);
