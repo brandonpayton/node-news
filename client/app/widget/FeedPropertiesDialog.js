@@ -32,7 +32,7 @@ define([
 			var w = this._widget;
 
 			// Convert tag list to a map as an easy way to get a collection of unique tags
-			var tagMap = w.tagsBox.get('value').trim().split(/\s+/).reduce(function(memo, tag) {
+			var tagMap = w.tagsBox.get('value').trim().split(/\s+,\s+/).reduce(function(memo, tag) {
 				memo[tag] = true;
 				return memo;
 			}, {});
@@ -47,7 +47,7 @@ define([
 			var w = this._widget;
 			w.urlBox.set("disabled", !!obj.url);
 			w.urlBox.set("value", obj.url || "");
-			w.tagsBox.set("value", obj.tags ? obj.tags.join(" ") : "");
+			w.tagsBox.set("value", obj.tags ? obj.tags.join(", ") : "");
 		}
 	});
 });
