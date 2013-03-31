@@ -120,6 +120,7 @@ define([
                     if(selectedDuringCurrentClick) {
                         // TODO: CONTRIB: Lobby for isExpanded method for dgrid+tree
                         if(!list._expanded[row.id]) {
+							// TODO: Set flag here to skip animation and clean up the code.
                             list.expand(row, true);
                         }
                     } else {
