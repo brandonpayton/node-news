@@ -4,6 +4,7 @@ define([
 	"dojo/Deferred",
 	"dojo/when",
 	"dojo/on",
+	"dojo/query",
 	"dojo/dom-construct",
 	"dojo/topic",
 	"./ArticleRow",
@@ -11,7 +12,7 @@ define([
 	"dgrid/OnDemandList",
 	"dijit/Menu",
 	"dijit/MenuItem"
-], function(declare, lang, Deferred, when, on, domConstruct, topic, ArticleRow, _WidgetBase, OnDemandList, Menu, MenuItem) {
+], function(declare, lang, Deferred, when, on, query, domConstruct, topic, ArticleRow, _WidgetBase, OnDemandList, Menu, MenuItem) {
 
 	return declare("app.widget.ArticleList", [ _WidgetBase ], {
 		_list: null,
@@ -75,6 +76,20 @@ define([
 				// Default all articles to closed.
 				self._openArticlesMap = { };
 				list.set('query', { tag: tag });
+			});
+
+			// Enforce that only one article is open at a time.
+			this.on('article-opened', function(evt){
+				query('.dgrid-row', list.domNode).forEach(function(rowNode){
+					if(rowNode !== event.target) {
+						rowNode.widget.set('open', false);
+					}
+				});
+			});
+
+			// Scroll opened article to the top
+			this.on('article-opened', function(evt){
+				evt.target.scrollIntoView();
 			});
 		}
 	});

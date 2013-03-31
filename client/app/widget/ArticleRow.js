@@ -35,6 +35,12 @@ define([
 			this.own(on(this.headerNode, "click", function() {
 				self.set("open", !self.get('open'));
 			}));
+
+			this.watch("open", function(name, oldValue, newValue){
+				if(newValue !== oldValue && newValue) {
+					this.emit("article-opened");
+				}
+			});
 		},
 
 		_setOpenAttr: function(isOpen) {
@@ -64,7 +70,8 @@ define([
 			} else {
 				domClass.remove(this.domNode, "open");
 			}
-			this.open = isOpen;
+
+			this._set('open', isOpen);
 		},
 
 		_formatDate: function(dateValue) {
