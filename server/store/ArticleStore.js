@@ -2,8 +2,9 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/Deferred",
-    "dojo/store/util/QueryResults"
-], function(declare, lang, Deferred, QueryResults) {
+    "dojo/store/util/QueryResults",
+    "core/_ArticleStoreBase"
+], function(declare, lang, Deferred, QueryResults, _ArticleStoreBase) {
 
     // TODO: Factor out this general jsProperty2column_name mapping logic into another module.
     function rowToArticle(row) {
@@ -29,50 +30,29 @@ define([
         return row;
     }
 
-    var ArticleStore = declare(null, {
+    var ArticleStore = declare(_ArticleStoreBase, {
         _postgresClient: null,
-        _feedUrl: null,
 
-        getIdentity: function(obj) {
-            return obj.id;
-        },
-
-        constructor: function(postgresClient, feedUrl) {
+        constructor: function(postgresClient) {
             this._postgresClient = postgresClient;
-            this._feedUrl = feedUrl;
         },
 
         add: function(articleData) {
             var article = {
-                type: "article",
-                feedUrl: this._feedUrl
+                type: "article"
             };
             return this.put(lang.mixin(article, articleData));
         },
 
         put: function(article) {
             var paramSpecs = [],
-                paramValues = [],
-                applicablePropertyNames = [
-                    'feedUrl',
-                    'guid',
-                    'date',
-                    'link',
-                    'author',
-                    'title',
-                    'summary',
-                    'description',
-                    'read',
-                    'id'
-                ];
+                paramValues = [];
 
-            var articleToPut = applicablePropertyNames.reduce(function(memo, propName) {
-                memo[propName] = article[propName];
-                return memo;
-            }, { });
-
-            var articleRow = articleToRow(articleToPut);
+            var articleRow = articleToRow(article);
             Object.keys(articleRow).forEach(function(paramName, i) {
+				// Skip the type
+				if(paramName === 'type') return;
+
                 var paramValue = articleRow[paramName];
                 paramSpecs.push(paramName + " := $" + (paramSpecs.length + 1));
                 paramValues.push(paramValue);
@@ -82,14 +62,16 @@ define([
                 "SELECT * FROM news.save_article(" + paramSpecs.join(",") + ");",
                 paramValues
             ).then(function(result) {
-                return result.rows[0].save_article;
+                // Ignore result 
             });
         },
 
         get: function(id) {
+			var compoundId = this._deserializeIdentity(id);
+
             var resultPromise = this._postgresClient.query(
-                "SELECT * FROM news.get_article(id := $1);",
-                [ id ]
+                "SELECT * FROM news.get_article(feed_url := $1, guid := $2);",
+                [ compoundId.feedUrl, compoundId.guid ]
             );
             return resultPromise.then(function(result) {
                 var rows = result.rows;
@@ -105,19 +87,20 @@ define([
 
         query: function(query) {
             var resultPromise;
-            if(query === undefined) {
-                resultPromise = this._postgresClient.query(
-                    "SELECT * FROM news.get_articles_for_feed(feed_url := $1);",
-                    [ this._feedUrl ]
-                );
-            } else if(query.feedUrl && query.guid) {
-                // TODO: Write test for this.
-                // TODO: Convert this to postgres function
-                // TODO: Would it be appropriate for a query to return non-objects but rather a bool indicating existence?
-                resultPromise = this._postgresClient.query(
-                    "SELECT * FROM news.typed_article WHERE feed_url = $1 AND guid = $2;",
-                    [ query.feedUrl, query.guid ]
-                );
+            if(query) {
+				if(query.feedUrl !== undefined) {
+					resultPromise = this._postgresClient.query(
+						"SELECT * FROM news.get_articles_for_feed(feed_url := $1);",
+						[ query.feedUrl ]
+					);
+				} else if(query.tag !== undefined) {
+					resultPromise = this._postgresClient.query(
+						"SELECT * FROM news.get_articles_for_tag(tag := $1);",
+						[ query.tag ]
+					);
+				} else {
+					throw new Error("Unsupported query.");
+				}
             } else {
                 throw new Error("Unsupported query.");
             }
@@ -125,6 +108,20 @@ define([
             return QueryResults(resultPromise.then(function(result) {
                 return result.rows.map(rowToArticle);
             }));
+        },
+
+        exists: function(article) {
+            // TODO: Write test for this.
+            // TODO: Convert this to postgres function
+            return this._postgresClient.query(
+                "SELECT COUNT(*) FROM news.typed_article WHERE feed_url = $1 AND guid = $2;",
+                [ article.feedUrl, article.guid ]
+            ).then(function(result) {
+				return result.rows[0].count > 0;
+			});
+        },
+
+        getArticlesForTag: function(tag) {
         }
     });
 

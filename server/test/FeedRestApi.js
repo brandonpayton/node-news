@@ -312,12 +312,7 @@ define([
             var expectedFeedUrl = "http://test.me";
             var expectedResponse = [ { mockResponse: "mockResponse" } ];
 
-            var feedStoreMock = {
-                getArticleStore: function(feedUrl) {
-                    t.assertEqual(expectedFeedUrl, feedUrl);
-                    return articleStoreMock;
-                }
-            };
+			var feedStoreMock = null;
             var articleStoreMock = {
                 query: function() {
                     t.assertEqual(0, arguments.length);
@@ -325,7 +320,7 @@ define([
                 }
             };
             var feedUpdaterMock = null;
-            var api = new FeedRestApi("/test", feedStoreMock, feedUpdaterMock);
+            var api = new FeedRestApi("/test", feedStoreMock, articleStoreMock, feedUpdaterMock);
             var req = createHttpRequestMock({
                 method: "GET",
                 url: "/test/feed/" + encodeURIComponent(expectedFeedUrl) + "/articles"

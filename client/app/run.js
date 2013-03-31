@@ -11,6 +11,10 @@ require({
         'dgrid',
         'xstyle',
         'put-selector',
+		{
+			name: 'core',
+			location: '../core'
+		},
         'app',
     ],
 

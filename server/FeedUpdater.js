@@ -5,6 +5,17 @@ define([
     "dojo/promise/all",
     "dojo/node!feedparser"
 ], function(declare, lang, Deferred, all, feedparser) {
+    var ARTICLE_PROPERTY_NAMES = [
+        'guid',
+        'date',
+        'link',
+        'author',
+        'title',
+        'summary',
+        'description',
+        'read'
+    ];
+
     return declare(null, {
         _feedStore: null,
         _queuedFeeds: [],
@@ -13,8 +24,9 @@ define([
         _windowSize: 5,
         _inProgressCount: 0,
 
-        constructor: function(feedStore) {
+        constructor: function(feedStore, articleStore) {
             this._feedStore = feedStore;
+			this._articleStore = articleStore;
         },
 
         _nextUpdateIfPossible: function() {
@@ -39,22 +51,21 @@ define([
         updateFeed: function(feed) {
             var dfdUpdate = new Deferred(),
                 feedStore = this._feedStore,
-                articleStore = feedStore.getArticleStore(feed.url),
+                articleStore = this._articleStore,
                 articleSavePromises = [];
 
             // TODO: Handle "error" event if there is one and create aggregate error notification article for this feed.
             feedparser.parseUrl(feed.url)
-            .on("article", function(article) {
+            .on("article", function(articleData) {
                 try {
-                    // TODO: Consider whether feedUrl + guid should be key instead of separate id property.
-                    var existingArticleQuery = {
-                        feedUrl: feed.url,
-                        guid: article.guid
-                    };
-
+                    var article = {};
+					ARTICLE_PROPERTY_NAMES.forEach(function(key) {
+						article[key] = articleData[key];
+					});
+					article.feedUrl = feed.url;
                     articleSavePromises.push(
-                        articleStore.query(existingArticleQuery).then(function(results) {
-                            if(results.length === 0) {
+                        articleStore.exists(article).then(function(exists) {
+                            if(!exists) {
                                 return articleStore.add(article);
                             }
                         })

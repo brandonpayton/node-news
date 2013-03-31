@@ -3,8 +3,8 @@ define([
     "dojo/_base/declare",
     "dojo/Deferred",
     "dojo/store/util/QueryResults",
-    "./ArticleStore"
-], function(lang, declare, Deferred, QueryResults, ArticleStore) {
+    "core/_FeedStoreBase"
+], function(lang, declare, Deferred, QueryResults, _FeedStoreBase) {
 
     // TODO: node-postgres handles deserialization of arrays. Fix node-postgres to handle serialization as well.
     function serializeTags(tags) {
@@ -25,7 +25,7 @@ define([
         }
     }
 
-    return declare([ ], {
+    return declare(_FeedStoreBase, {
         _postgresClient: null,
 
         constructor: function(postgresClient) {
@@ -116,32 +116,6 @@ define([
                     }
                 });
             }));
-        },
-
-        getArticleStore: function(feedId) {
-            return new ArticleStore(this._postgresClient, feedId);
-        },
-
-        getArticlesForTag: function(tag) {
-            return this._postgresClient.query(
-                "SELECT * FROM news.get_articles_for_tag(tag := $1);",
-                [ tag ]
-            ).then(function(results) {
-                return results.rows.map(ArticleStore.rowToArticle);
-            });
-        },
-
-        getIdentity: function(object) {
-            var type = object.type;
-            if(type === "feed") {
-                return object.url;
-            } else if(type === "tag") {
-                return object.name;
-            } else {
-                throw new Error("Object of type '" + type + "' is not supported by this store.");
-            }
-            return object.url;
         }
-
     });
 });

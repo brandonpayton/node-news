@@ -65,7 +65,7 @@ define([
     HttpError.prototype = new Error();
     HttpError.prototype.category = "http";
 
-    function createRequestHandlers(feedStore, feedUpdater) {
+    function createRequestHandlers(feedStore, articleStore, feedUpdater) {
         return {
             feeds: {
                 "GET": function() {
@@ -93,7 +93,7 @@ define([
                 },
                 articles: {
                     "GET": function(tagName) {
-                        return feedStore.getArticlesForTag(tagName);
+                        return articleStore.query({ tag: tagName });
                     }
                 }
             },
@@ -112,33 +112,30 @@ define([
                 },
                 articles: {
                     "GET": function(feedId) {
-                        return feedStore.getArticleStore(feedId).query();
-                    }
-                },
-                article: {
-                    "GET": function(feedId, articleId) {
-                        return feedStore.getArticleStore(feedId).get(articleId);
-                    },
-                    "PUT": function(feedId, articleId, data) {
-                        articleId = +articleId;
-
-                        // TODO: Not checking for matching feed URLs now with the idea that the ArticleStore might need to stand on it's own appart from the FeedStore. Consider this.
-                        if(data.id !== articleId) {
-                            throw new HttpError(400);
-                        }
-                        return feedStore.getArticleStore(feedId).put(data);
+                        return articleStore.query({ feedUrl: feedId });
                     }
                 }
-            }
+            },
+			article: {
+				"GET": function(articleId) {
+					return articleStore.get(articleId);
+				},
+				"PUT": function(articleId, data) {
+					if(articleStore.getIdentity(data) !== articleId) {
+						throw new HttpError(400);
+					}
+					return articleStore.put(data);
+				}
+			}
         };
     };
 
     return declare([], {
         _requestHandlers: null,
         _rootApiPath: null,
-        constructor: function(rootApiPath, feedStore, feedUpdater) {
+        constructor: function(rootApiPath, feedStore, articleStore, feedUpdater) {
             this._rootApiPath = rootApiPath;
-            this._requestHandlers = createRequestHandlers(feedStore, feedUpdater);
+            this._requestHandlers = createRequestHandlers(feedStore, articleStore, feedUpdater);
         },
         isApiPath: function(path) {
             return path.indexOf(this._rootApiPath) === 0;

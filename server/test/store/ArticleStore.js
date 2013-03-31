@@ -23,26 +23,27 @@ define([
     doh.register("ArticleStore", [
         function getIdentity(t) {
             var store = new ArticleStore();
-            var mockArticle = { id: "mock" };
-            t.assertEqual(mockArticle.id, store.getIdentity(mockArticle));
+            var mockArticle = { feedUrl: "mockUrl", guid: "mockGuid" };
+            t.assertEqual(mockArticle.feedUrl + " " + mockArticle.guid, store.getIdentity(mockArticle));
         },
         function getExisting(t) {
             var dfd = new doh.Deferred();
             var expectedArticle = {
-                id: 1,
-                feedUrl: "http://test.me/feed"
+                feedUrl: "http://test.me/feed",
+				guid: "abz"
             };
             var postgresClientMock = createPostgresClientMock(function(query, params) {
-                t.assertEqual(1, params.length);
-                t.assertEqual(expectedArticle.id, params[0])
+                t.assertEqual(2, params.length);
+                t.assertEqual(expectedArticle.feedUrl, params[0]);
+                t.assertEqual(expectedArticle.guid, params[1]);
                 return {
                     rows: [
-                        { id: expectedArticle.id, feed_url: expectedArticle.feedUrl }
+                        { feed_url: expectedArticle.feedUrl, guid: expectedArticle.guid }
                     ]
                 };
             });
-            var store = new ArticleStore(postgresClientMock, expectedArticle.feedUrl);
-            store.get(expectedArticle.id).then(dfd.getTestCallback(function(actualArticle) {
+            var store = new ArticleStore(postgresClientMock);
+            store.get(store.getIdentity(expectedArticle)).then(dfd.getTestCallback(function(actualArticle) {
                 Object.keys(expectedArticle).forEach(function(key) {
                     t.assertEqual(expectedArticle[key], actualArticle[key]);
                 });
@@ -53,10 +54,10 @@ define([
         function getNonExisting(t) {
             var dfd = new doh.Deferred();
             var postgresClientMock = createPostgresClientMock(function() {
-                return { rows: [ ] }
+                return { rows: [ ] };
             });
             var store = new ArticleStore(postgresClientMock);
-            store.get(123).then(dfd.getTestCallback(function(article) {
+            store.get("FEEDURL GUID").then(dfd.getTestCallback(function(article) {
                 t.assertEqual(undefined, article);
             }), lang.hitch(dfd, "errback"));
             return dfd;
@@ -67,7 +68,7 @@ define([
                 return { rows: [ {}, {} ] }
             });
             var store = new ArticleStore(postgresClientMock);
-            store.get(123).then(
+            store.get("FEEDURL GUID").then(
                 function() {
                     dfd.errback(new Error("Expected error but none was encountered."));
                 },
@@ -128,19 +129,19 @@ define([
                 // Do nothing.
             }), lang.hitch(dfd, "errback"));
         },
-        function query(t) {
+        function query_feedUrl(t) {
             var dfd = new doh.Deferred();
 
             var expectedFeedUrl = "http://test.me/feed";
             var expectedRows = [
                 {
-                    id: 123,
                     feedUrl: expectedFeedUrl,
+					guid: 123,
                     title: "First Title"
                 },
                 {
-                    id: 456,
                     feedUrl: expectedFeedUrl,
+                    guid: 456,
                     title: "Second Title"
                 }
             ];
@@ -148,22 +149,67 @@ define([
                 t.assertEqual(1, params.length);
                 t.assertEqual(expectedFeedUrl, params[0]);
 
-                return [
-                    {
-                        id: expectedRows[0].id,
-                        feed_url: expectedRows[0].feedUrl,
-                        title: expectedRows[0].title
-                    },
-                    {
-                        id: expectedRows[1].id,
-                        feed_url: expectedRows[1].feedUrl,
-                        title: expectedRows[1].title
-                    }
-                ];
+                return {
+					rows: [
+						{
+							feed_url: expectedRows[0].feedUrl,
+							guid: expectedRows[0].guid,
+							title: expectedRows[0].title
+						},
+						{
+							feed_url: expectedRows[1].feedUrl,
+							guid: expectedRows[1].guid,
+							title: expectedRows[1].title
+						}
+					]
+				};
             });
 
             var store = new ArticleStore(postgresClientMock, expectedFeedUrl);
-            store.query().then(dfd.getTestCallback(function() {
+            store.query({ feedUrl: expectedFeedUrl }).then(dfd.getTestCallback(function() {
+                // Do nothing.
+            }), lang.hitch(dfd, "errback"));
+
+            return dfd;
+        },
+        function query_tag(t) {
+            var dfd = new doh.Deferred();
+
+            var expectedTag = "you're it";
+            var expectedRows = [
+                {
+                    id: 123,
+                    feedUrl: "feedUrl1",
+                    title: "First Title"
+                },
+                {
+                    id: 456,
+                    feedUrl: "feedUrl2",
+                    title: "Second Title"
+                }
+            ];
+            var postgresClientMock = createPostgresClientMock(function(query, params) {
+                t.assertEqual(1, params.length);
+                t.assertEqual(expectedTag, params[0]);
+
+                return {
+					rows: [
+						{
+							feed_url: expectedRows[0].feedUrl,
+							guid: expectedRows[0].guid,
+							title: expectedRows[0].title
+						},
+						{
+							feed_url: expectedRows[1].feedUrl,
+							guid: expectedRows[1].guid,
+							title: expectedRows[1].title
+						}
+					]
+				};
+            });
+
+            var store = new ArticleStore(postgresClientMock);
+            store.query({ tag: expectedTag }).then(dfd.getTestCallback(function() {
                 // Do nothing.
             }), lang.hitch(dfd, "errback"));
 

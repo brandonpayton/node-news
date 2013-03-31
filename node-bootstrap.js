@@ -6,6 +6,7 @@ dojoConfig = {
         "dojo",
         "util",
         "client",
+        "core",
         "server",
         {
             name: "dijit",

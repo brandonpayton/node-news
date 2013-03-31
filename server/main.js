@@ -9,17 +9,20 @@ define([
     "./postgres",
     "./nodeCallback",
     "./store/FeedStore",
+	"./store/ArticleStore",
     "dojo/store/Observable",
     "./FeedRestApi",
     "./FeedUpdater"
-], function(contextRequire, when, http, send, url, Deferred, config, postgres, nodeCallback, FeedStore, Observable, FeedRestApi, FeedUpdater) {
+], function(contextRequire, when, http, send, url, Deferred, config, postgres, nodeCallback, FeedStore, ArticleStore, Observable, FeedRestApi, FeedUpdater) {
 
     var feedStore,
+		articleStore,
         feedUpdater;
 
     postgres.createClient(config.postgresConnectionString).then(function(postgresClient) {
         feedStore = new FeedStore(postgresClient);
-        feedUpdater = new FeedUpdater(feedStore);
+		articleStore = new ArticleStore(postgresClient);
+        feedUpdater = new FeedUpdater(feedStore, articleStore);
 
         return feedStore.query().then(function(allFeedsQueryResults) {
             setTimeout(function updateFeeds() {
@@ -50,8 +53,8 @@ define([
                 res.end('Redirecting to ' + path);
             }
 
-            var feedRestApi = new FeedRestApi("/data/", feedStore, feedUpdater),
-                clientUrlPattern = new RegExp("^/client|dojo/");
+            var feedRestApi = new FeedRestApi("/data/", feedStore, articleStore, feedUpdater),
+                clientUrlPattern = new RegExp("^/dojo|client|core/");
 
             if([ "", "/", "/client" ].indexOf(u.pathname) >= 0) {
                 redirect("/client/client.html");
