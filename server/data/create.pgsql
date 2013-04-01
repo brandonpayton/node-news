@@ -76,14 +76,19 @@ CREATE VIEW news.typed_article AS
     SELECT 'article'::text AS type, * FROM news.article ORDER BY date DESC;
 
 -- TODO: Test that only tags on non-deleted feeds are included.
-CREATE VIEW news.tags_and_tagless_feeds AS
-    SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed
-        WHERE feed_url IN (SELECT url FROM news.feed WHERE NOT deleted)
-        GROUP BY tag
-    UNION ALL
-    SELECT * FROM news.typed_feed
-        WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
-        ORDER BY type DESC, name;
+CREATE OR REPLACE VIEW news.tags_and_tagless_feeds AS
+	-- SELECTING this way so functions can be used in the ORDER BY clause and we can sort case-insensitively
+	SELECT * FROM (
+		SELECT 'tag' AS type, tag AS name, NULL AS url, NULL AS deleted, NULL AS tags FROM news.tag_to_feed
+			WHERE feed_url IN (SELECT url FROM news.feed WHERE NOT deleted)
+			GROUP BY tag
+		UNION ALL
+		SELECT * FROM news.typed_feed
+			WHERE url NOT IN (SELECT feed_url FROM news.tag_to_feed) AND NOT deleted
+	) AS temp
+	-- TODO: Sorting by 'type' is hack based on coincidence. If we had three types of things that we wanted sorted a certain way, alphabetical sorting wouldn't be a foolproof solution. What is a clean, explicit way to make tags come first in the results?
+	-- case-insensitive order 
+	ORDER BY type DESC, lower(name);
 
 /*
  * FUNCTIONs
@@ -100,7 +105,8 @@ LANGUAGE sql
 AS $$
     SELECT * FROM news.typed_feed
         WHERE url IN (SELECT feed_url FROM news.tag_to_feed WHERE tag = $1) AND NOT deleted
-        ORDER BY name;
+		-- case-insensitive order
+        ORDER BY lower(name);
 $$;
 
 CREATE FUNCTION news.get_tags_and_tagless_feeds() RETURNS SETOF news.tags_and_tagless_feeds

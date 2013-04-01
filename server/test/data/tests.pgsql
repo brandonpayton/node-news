@@ -56,6 +56,7 @@ BEGIN
 END;
 $$;
 
+-- TODO: Test that tags and tagless feeds are ordered case-insensitively.
 CREATE FUNCTION test.test_tags_and_tagless_feeds() RETURNS VOID
 LANGUAGE plpgsql
 AS $$
@@ -105,6 +106,7 @@ BEGIN
 END;
 $$;
 
+-- TODO: Test that feeds are sorted case-insensitively.
 CREATE FUNCTION test.test_get_feeds_with_tag() RETURNS VOID
 LANGUAGE plpgsql
 AS $$
